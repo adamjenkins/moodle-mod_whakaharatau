@@ -1,0 +1,102 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/start_screen
+
+    The start screen, drawn in the slide style: the cover (or first slide) image on the left, the panel
+    with the activity's name, description, slide count, mode and play mode, the result of an earlier
+    attempt, and Start (or Continue and Start again).
+
+    Data attributes required for JS:
+    * data-region="startscreen", data-region="startactions", data-region="previous"
+    * data-action="start" | "continue" | "startagain" | "lastresult"
+
+    Context variables required for this template:
+    * idprefix - prefix of every DOM id
+    * name - activity name (formatted)
+    * introhtml - formatted description, empty on the course page (shown by the course page itself)
+    * cover - image URL, may be empty
+    * factstext, playmodetext, previoustext - plain text
+    * showstart, showcontinue, showstartagain, noattemptsleft, cannotattempt, notplayable - what to show
+    * lastattemptid - latest finished attempt, 0 if none
+    * editurl - Edit slides page for teachers, empty otherwise
+
+    Example context (json):
+    {
+        "idprefix": "mod-whakaharatau-12",
+        "name": "H1.12 Whakaharatau",
+        "introhtml": "<p>Listen to each clip and choose the one that matches the picture.</p>",
+        "cover": "https://example.com/pluginfile.php/40/mod_whakaharatau/cover/0/1/cover.png",
+        "factstext": "20 slides · Test, 2 attempts left",
+        "playmodetext": "Shuffled · One pass",
+        "previoustext": "Best score so far: 80%",
+        "showstart": false,
+        "showcontinue": true,
+        "showstartagain": true,
+        "noattemptsleft": false,
+        "cannotattempt": false,
+        "notplayable": false,
+        "lastattemptid": 0,
+        "editurl": ""
+    }
+}}
+<div class="mod-whakaharatau-screen mod-whakaharatau-start" data-region="startscreen">
+    <div class="mod-whakaharatau-figure">
+        {{#cover}}
+            <img class="mod-whakaharatau-image" src="{{cover}}" alt="" decoding="async">
+        {{/cover}}
+    </div>
+    <div class="mod-whakaharatau-panel">
+        <h3 class="mod-whakaharatau-title" id="{{idprefix}}-title" tabindex="-1">{{name}}</h3>
+        {{#introhtml}}
+            <div class="mod-whakaharatau-intro">{{{introhtml}}}</div>
+        {{/introhtml}}
+        <p class="mod-whakaharatau-facts">{{factstext}}</p>
+        <p class="mod-whakaharatau-playmode">{{playmodetext}}</p>
+        <p class="mod-whakaharatau-previous" data-region="previous"{{^previoustext}} hidden{{/previoustext}}>{{previoustext}}</p>
+
+        {{#notplayable}}
+            <p class="mod-whakaharatau-notice">{{#str}} notplayable, mod_whakaharatau {{/str}}</p>
+            {{#editurl}}
+                <p><a href="{{editurl}}">{{#str}} editslides, mod_whakaharatau {{/str}}</a></p>
+            {{/editurl}}
+        {{/notplayable}}
+        {{#cannotattempt}}
+            <p class="mod-whakaharatau-notice">{{#str}} cannotattempt, mod_whakaharatau {{/str}}</p>
+        {{/cannotattempt}}
+        <p class="mod-whakaharatau-notice" data-region="noattemptsleft"{{^noattemptsleft}} hidden{{/noattemptsleft}}>
+            {{#str}} nomoreattempts, mod_whakaharatau {{/str}}
+        </p>
+
+        <div class="mod-whakaharatau-startactions" data-region="startactions">
+            <button type="button" class="mod-whakaharatau-start-button" data-action="start"{{^showstart}} hidden{{/showstart}}>
+                <span class="mod-whakaharatau-start-label">{{#str}} start, mod_whakaharatau {{/str}}</span>
+                <span class="mod-whakaharatau-icon mod-whakaharatau-icon-next" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="mod-whakaharatau-start-button" data-action="continue"{{^showcontinue}} hidden{{/showcontinue}}>
+                <span class="mod-whakaharatau-start-label">{{#str}} continue, mod_whakaharatau {{/str}}</span>
+                <span class="mod-whakaharatau-icon mod-whakaharatau-icon-next" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="mod-whakaharatau-secondary" data-action="startagain"{{^showstartagain}} hidden{{/showstartagain}}>
+                {{#str}} startagain, mod_whakaharatau {{/str}}
+            </button>
+            <button type="button" class="mod-whakaharatau-secondary" data-action="lastresult"{{^lastattemptid}} hidden{{/lastattemptid}}>
+                {{#str}} lastresult, mod_whakaharatau {{/str}}
+            </button>
+        </div>
+    </div>
+</div>

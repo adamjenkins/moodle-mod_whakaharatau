@@ -1,0 +1,146 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/edit_slides
+
+    The Edit slides page: a reorderable list of slides with thumbnails, problems and actions.
+    The list is made sortable by mod_whakaharatau/edit_slides (core/sortable_list); its drag handles
+    open core's keyboard-accessible "Move" dialogue when activated.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region="slide-list" on the list, data-slideid on each item, data-region="slide-title" on the title
+
+    Context variables required for this template:
+    * cmid - course module id
+    * hasslides, slidecount, playable, notplayable, problemcount, oneproblem (problemcount is 1)
+    * slides - list of {slideid, number, title, hasimage, imageurl, alttext, decorative, prompt, promptlang,
+      optioncount, correct, hasproblems, problems [{text}], editurl, deleteurl, movetitle}
+    * addurl, importurl, exporturl, viewurl
+
+    Example context (json):
+    {
+        "cmid": 12,
+        "hasslides": true,
+        "slidecount": 1,
+        "playable": false,
+        "notplayable": true,
+        "problemcount": 1,
+        "oneproblem": true,
+        "slides": [{
+            "slideid": 3,
+            "number": 1,
+            "title": "Slide 1",
+            "hasimage": true,
+            "imageurl": "https://example.com/pluginfile.php/1/mod_whakaharatau/slideimage/3/1/image.jpg",
+            "alttext": "A dog runs on the beach",
+            "decorative": false,
+            "prompt": "He aha tēnei?",
+            "promptlang": "mi",
+            "optioncount": "4 options",
+            "correct": "Correct: option 2",
+            "hasproblems": true,
+            "problems": [{"text": "No option is marked correct."}],
+            "editurl": "https://example.com/mod/whakaharatau/edit.php?id=12&action=edit&slideid=3",
+            "deleteurl": "https://example.com/mod/whakaharatau/edit.php?id=12&action=delete&slideid=3",
+            "movetitle": "Move slide 1"
+        }],
+        "addurl": "https://example.com/mod/whakaharatau/edit.php?id=12&action=edit",
+        "importurl": "https://example.com/mod/whakaharatau/import.php?id=12",
+        "exporturl": "https://example.com/mod/whakaharatau/export.php?id=12",
+        "viewurl": "https://example.com/mod/whakaharatau/view.php?id=12"
+    }
+}}
+<div class="mod_whakaharatau-edit" id="mod_whakaharatau-edit-{{cmid}}">
+    {{#notplayable}}
+        <div class="alert alert-warning" role="status">
+            {{#hasslides}}
+                {{#oneproblem}}{{#str}} slidesneedfixingone, mod_whakaharatau {{/str}}{{/oneproblem}}
+                {{^oneproblem}}{{#str}} slidesneedfixing, mod_whakaharatau, {{problemcount}} {{/str}}{{/oneproblem}}
+            {{/hasslides}}
+            {{^hasslides}}{{#str}} noslidesyet, mod_whakaharatau {{/str}}{{/hasslides}}
+        </div>
+    {{/notplayable}}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-primary" href="{{addurl}}">{{#str}} addslide, mod_whakaharatau {{/str}}</a>
+        <a class="btn btn-secondary" href="{{importurl}}">{{#str}} importslides, mod_whakaharatau {{/str}}</a>
+        {{#hasslides}}
+            <a class="btn btn-secondary" href="{{exporturl}}">{{#str}} exportslides, mod_whakaharatau {{/str}}</a>
+            <a class="btn btn-secondary" href="{{viewurl}}">{{#str}} previewactivity, mod_whakaharatau {{/str}}</a>
+        {{/hasslides}}
+    </div>
+
+    {{#hasslides}}
+        <p class="text-muted">{{#str}} reorderhelp, mod_whakaharatau {{/str}}</p>
+        <ol class="list-unstyled mod_whakaharatau-slidelist" data-region="slide-list"
+            aria-label="{{#str}} slidelist, mod_whakaharatau {{/str}}">
+            {{#slides}}
+                <li class="mod_whakaharatau-slideitem d-flex flex-wrap align-items-start gap-3 border rounded p-2 mb-2"
+                    data-slideid="{{slideid}}">
+                    <div class="mod_whakaharatau-slidehandle">
+                        {{> core/drag_handle }}
+                    </div>
+                    <div class="mod_whakaharatau-slidethumb">
+                        {{#hasimage}}
+                            <img src="{{imageurl}}" alt="" class="img-fluid rounded" width="120" height="90" loading="lazy">
+                        {{/hasimage}}
+                        {{^hasimage}}
+                            <span class="badge bg-secondary">{{#str}} noimage, mod_whakaharatau {{/str}}</span>
+                        {{/hasimage}}
+                    </div>
+                    <div class="mod_whakaharatau-slidedetails flex-grow-1">
+                        <h3 class="h5 mb-1" data-region="slide-title">{{title}}</h3>
+                        <dl class="mb-1 small">
+                            <div>
+                                <dt class="d-inline">{{#str}} alttext, mod_whakaharatau {{/str}}:</dt>
+                                <dd class="d-inline">
+                                    {{#decorative}}{{#str}} decorative, mod_whakaharatau {{/str}}{{/decorative}}
+                                    {{^decorative}}{{alttext}}{{/decorative}}
+                                </dd>
+                            </div>
+                            {{#prompt}}
+                                <div>
+                                    <dt class="d-inline">{{#str}} prompt, mod_whakaharatau {{/str}}:</dt>
+                                    <dd class="d-inline" {{#promptlang}}lang="{{promptlang}}"{{/promptlang}}>{{prompt}}</dd>
+                                </div>
+                            {{/prompt}}
+                        </dl>
+                        <p class="mb-1 small">{{optioncount}}{{#correct}} · {{correct}}{{/correct}}</p>
+                        {{#hasproblems}}
+                            <ul class="mb-0 small text-danger">
+                                {{#problems}}
+                                    <li>{{#pix}} i/warning, core {{/pix}}{{text}}</li>
+                                {{/problems}}
+                            </ul>
+                        {{/hasproblems}}
+                    </div>
+                    <div class="mod_whakaharatau-slideactions d-flex gap-2">
+                        <a class="btn btn-secondary btn-sm" href="{{editurl}}">
+                            {{#str}} edit, core {{/str}}<span class="visually-hidden"> {{title}}</span>
+                        </a>
+                        <a class="btn btn-outline-danger btn-sm" href="{{deleteurl}}">
+                            {{#str}} delete, core {{/str}}<span class="visually-hidden"> {{title}}</span>
+                        </a>
+                    </div>
+                </li>
+            {{/slides}}
+        </ol>
+    {{/hasslides}}
+</div>

@@ -1,0 +1,150 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/player_slide
+
+    One slide: the image fading into the grey panel, the prompt, one row per audio option (play =
+    speaker-koru, choose = maroon dart, which chooses and submits at once), the exit X and the Next
+    arrow (hidden until the slide is finished). Rendered by mod_whakaharatau/player; the JavaScript
+    then sets each row's state (data-state) and labels.
+
+    Data attributes required for JS:
+    * data-region="slide", "option", "playlabel", "pauselabel", "chooseicon", "chooselabel", "transcript",
+      "status", "nextlabel"
+    * data-action="play" | "choose" | "next" | "exit"
+    * data-optionid, data-number, data-state, data-audiourl
+
+    Context variables required for this template:
+    * idprefix - prefix of every DOM id
+    * slideid - slide id
+    * slidelabel - e.g. "Slide 7 of 20" (the slide's heading)
+    * showprogress - show the progress bar
+    * number, count, percent - progress values
+    * imageurl, alttext - the image (alttext empty when decorative)
+    * prompthtml, promptlang - the formatted prompt and its language, may be empty
+    * promptaudiourl, promptplaylabel, promptpauselabel - the prompt audio, may be empty
+    * options - list of: optionid, number, audiourl, transcript, playlabel, pauselabel, chooselabel
+    * exitlabel - name of the exit X
+    * nextlabel - name of the Next arrow
+
+    Example context (json):
+    {
+        "idprefix": "mod-whakaharatau-12",
+        "slideid": 5,
+        "slidelabel": "Slide 7 of 20",
+        "showprogress": true,
+        "number": 7,
+        "count": 20,
+        "percent": 35,
+        "imageurl": "https://example.com/pluginfile.php/40/mod_whakaharatau/slideimage/5/1/image.jpg",
+        "alttext": "Two people beside a car at the river",
+        "prompthtml": "",
+        "promptlang": "",
+        "promptaudiourl": "",
+        "promptplaylabel": "Play the prompt",
+        "promptpauselabel": "Pause the prompt",
+        "exitlabel": "Exit",
+        "nextlabel": "Next slide",
+        "options": [
+            {
+                "optionid": 21,
+                "number": 1,
+                "audiourl": "https://example.com/pluginfile.php/40/mod_whakaharatau/optionaudio/21/1/audio.mp3",
+                "transcript": "",
+                "playlabel": "Play option 1 of 2",
+                "pauselabel": "Pause option 1 of 2",
+                "chooselabel": "Choose option 1 of 2"
+            },
+            {
+                "optionid": 22,
+                "number": 2,
+                "audiourl": "https://example.com/pluginfile.php/40/mod_whakaharatau/optionaudio/22/1/audio.mp3",
+                "transcript": "Kei te inu wai ia.",
+                "playlabel": "Play option 2 of 2",
+                "pauselabel": "Pause option 2 of 2",
+                "chooselabel": "Choose option 2 of 2"
+            }
+        ]
+    }
+}}
+<div class="mod-whakaharatau-screen mod-whakaharatau-slide" data-region="slide" data-slideid="{{slideid}}">
+    <div class="mod-whakaharatau-figure">
+        {{#imageurl}}
+            <img class="mod-whakaharatau-image" src="{{imageurl}}" alt="{{alttext}}" decoding="async">
+        {{/imageurl}}
+    </div>
+    <div class="mod-whakaharatau-panel">
+        {{#showprogress}}
+            <div class="mod-whakaharatau-progress">
+                <h3 class="mod-whakaharatau-slideheading" id="{{idprefix}}-title" tabindex="-1">{{slidelabel}}</h3>
+                <div class="mod-whakaharatau-progressbar" role="progressbar" aria-labelledby="{{idprefix}}-title"
+                    aria-valuemin="0" aria-valuemax="{{count}}" aria-valuenow="{{number}}">
+                    <span class="mod-whakaharatau-progressbar-fill" style="width: {{percent}}%;"></span>
+                </div>
+            </div>
+        {{/showprogress}}
+        {{^showprogress}}
+            <h3 class="visually-hidden" id="{{idprefix}}-title" tabindex="-1">{{slidelabel}}</h3>
+        {{/showprogress}}
+
+        {{#prompthtml}}
+            <div class="mod-whakaharatau-prompt" id="{{idprefix}}-prompt"{{#promptlang}} lang="{{promptlang}}"{{/promptlang}}>{{{prompthtml}}}</div>
+        {{/prompthtml}}
+        {{^prompthtml}}
+            <p class="visually-hidden" id="{{idprefix}}-prompt">{{#str}} chooseinstruction, mod_whakaharatau {{/str}}</p>
+        {{/prompthtml}}
+        {{#promptaudiourl}}
+            <button type="button" class="mod-whakaharatau-btn mod-whakaharatau-play mod-whakaharatau-promptplay"
+                data-action="play" data-audiourl="{{promptaudiourl}}" data-prompt="1">
+                <span class="mod-whakaharatau-icon mod-whakaharatau-icon-play" aria-hidden="true"></span>
+                <span class="visually-hidden" data-region="playlabel">{{promptplaylabel}}</span>
+                <span class="visually-hidden" data-region="pauselabel" hidden>{{promptpauselabel}}</span>
+            </button>
+        {{/promptaudiourl}}
+
+        <ol class="mod-whakaharatau-options" aria-labelledby="{{idprefix}}-prompt">
+            {{#options}}
+                <li class="mod-whakaharatau-option" data-region="option" data-optionid="{{optionid}}"
+                    data-number="{{number}}" data-state="none">
+                    <div class="mod-whakaharatau-option-controls">
+                        <button type="button" class="mod-whakaharatau-btn mod-whakaharatau-play" data-action="play"
+                            data-audiourl="{{audiourl}}"{{^audiourl}} disabled{{/audiourl}}>
+                            <span class="mod-whakaharatau-icon mod-whakaharatau-icon-play" aria-hidden="true"></span>
+                            <span class="visually-hidden" data-region="playlabel">{{playlabel}}</span>
+                            <span class="visually-hidden" data-region="pauselabel" hidden>{{pauselabel}}</span>
+                        </button>
+                        <button type="button" class="mod-whakaharatau-btn mod-whakaharatau-choose" data-action="choose">
+                            <span class="mod-whakaharatau-icon mod-whakaharatau-icon-choose" data-region="chooseicon"
+                                aria-hidden="true"></span>
+                            <span class="visually-hidden" data-region="chooselabel">{{chooselabel}}</span>
+                        </button>
+                    </div>
+                    <p class="mod-whakaharatau-transcript" data-region="transcript"{{^transcript}} hidden{{/transcript}}>{{transcript}}</p>
+                </li>
+            {{/options}}
+        </ol>
+        <p class="mod-whakaharatau-status" data-region="status"></p>
+    </div>
+    <button type="button" class="mod-whakaharatau-exit" data-action="exit">
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-wrong" aria-hidden="true"></span>
+        <span class="visually-hidden">{{exitlabel}}</span>
+    </button>
+    <button type="button" class="mod-whakaharatau-next" data-action="next" hidden>
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-next" aria-hidden="true"></span>
+        <span class="visually-hidden" data-region="nextlabel">{{nextlabel}}</span>
+    </button>
+</div>

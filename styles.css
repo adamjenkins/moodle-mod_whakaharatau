@@ -1,0 +1,668 @@
+/* Listening practice (mod_whakaharatau) player.
+ *
+ * Colours are custom properties on .mod-whakaharatau-player, with dark colour mode values below.
+ * The icons are the plugin's SVGs used as masks, so they take their colour from currentColor:
+ * the navy exit X and the maroon "wrong" X are the same drawing.
+ */
+
+.mod-whakaharatau-player {
+    --mwh-navy: #334d66;
+    --mwh-navy-dark: #1c2c3b;
+    --mwh-maroon: #710222;
+    --mwh-green: #145a20;
+    --mwh-mint: #8bd5a5;
+    --mwh-lattice: rgba(255, 255, 255, 0.4);
+    --mwh-panel: #b4aca3;
+    --mwh-panel-soft: rgba(255, 255, 255, 0.4);
+    --mwh-ink: #1d2125;
+    --mwh-focus: #0f2a44;
+    --mwh-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.25);
+    --mwh-radius: 2.5rem;
+    color: var(--mwh-ink);
+    margin: 0 0 1rem;
+}
+
+[data-bs-theme="dark"] .mod-whakaharatau-player {
+    --mwh-navy: #a9c4de;
+    --mwh-navy-dark: #d7e6f4;
+    --mwh-maroon: #f29bb0;
+    --mwh-green: #86d993;
+    --mwh-mint: #1f4d33;
+    --mwh-lattice: rgba(255, 255, 255, 0.08);
+    --mwh-panel: #3a3632;
+    --mwh-panel-soft: rgba(255, 255, 255, 0.08);
+    --mwh-ink: #e9ecef;
+    --mwh-focus: #e9ecef;
+    --mwh-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.6);
+}
+
+/* The mint stage with a diamond lattice drawn by two crossing stripe patterns. */
+.mod-whakaharatau-stage {
+    container-type: inline-size; /* stylelint-disable-line csstree/validator */
+    background-color: var(--mwh-mint);
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent 0,
+            transparent 22px,
+            var(--mwh-lattice) 22px,
+            var(--mwh-lattice) 26px
+        ),
+        repeating-linear-gradient(
+            -45deg,
+            transparent 0,
+            transparent 22px,
+            var(--mwh-lattice) 22px,
+            var(--mwh-lattice) 26px
+        );
+    border-radius: 0.75rem;
+    padding: 2rem 3rem 3rem 2rem;
+}
+
+/* The rounded card. */
+.mod-whakaharatau-card {
+    position: relative;
+    background-color: var(--mwh-panel);
+    border-radius: var(--mwh-radius);
+    box-shadow: var(--mwh-shadow);
+    min-height: 26rem;
+}
+
+.mod-whakaharatau-screen {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    min-height: 26rem;
+}
+
+/* The image fills the left side and fades into the grey panel. */
+.mod-whakaharatau-figure {
+    grid-row: 1;
+    grid-column: 1;
+    position: relative;
+    z-index: 0;
+    width: calc(100% + 4rem);
+    min-height: 100%;
+    overflow: hidden;
+    border-radius: var(--mwh-radius) 0 0 var(--mwh-radius);
+}
+
+.mod-whakaharatau-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+}
+
+.mod-whakaharatau-panel {
+    grid-row: 1;
+    grid-column: 2;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 4rem 4.5rem 5.5rem 1.5rem;
+}
+
+.mod-whakaharatau-title {
+    font-size: 1.75rem;
+    margin: 0;
+}
+
+.mod-whakaharatau-intro,
+.mod-whakaharatau-facts,
+.mod-whakaharatau-playmode,
+.mod-whakaharatau-previous {
+    margin: 0;
+}
+
+.mod-whakaharatau-facts {
+    font-weight: 600;
+}
+
+.mod-whakaharatau-notice {
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Icons: the SVG files are masks over currentColor. */
+.mod-whakaharatau-icon {
+    display: inline-block;
+    flex: none;
+    width: 2.75rem;
+    height: 2.75rem;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.mod-whakaharatau-icon-play {
+    mask-image: url([[pix:mod_whakaharatau|play]]);
+}
+
+.mod-whakaharatau-icon-choose {
+    mask-image: url([[pix:mod_whakaharatau|choose]]);
+}
+
+.mod-whakaharatau-icon-next {
+    mask-image: url([[pix:mod_whakaharatau|next]]);
+}
+
+.mod-whakaharatau-icon-wrong {
+    mask-image: url([[pix:mod_whakaharatau|wrong]]);
+}
+
+.mod-whakaharatau-icon-tick {
+    mask-image: url([[pix:mod_whakaharatau|tick]]);
+}
+
+/* Buttons. Every target is at least 44 x 44 px. */
+.mod-whakaharatau-btn,
+.mod-whakaharatau-exit,
+.mod-whakaharatau-next,
+.mod-whakaharatau-start-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: var(--mwh-navy);
+    cursor: pointer;
+}
+
+.mod-whakaharatau-btn:focus-visible,
+.mod-whakaharatau-exit:focus-visible,
+.mod-whakaharatau-next:focus-visible,
+.mod-whakaharatau-start-button:focus-visible,
+.mod-whakaharatau-secondary:focus-visible,
+.mod-whakaharatau-title:focus-visible,
+.mod-whakaharatau-slideheading:focus-visible,
+.mod-whakaharatau-roundtitle:focus-visible {
+    outline: 3px solid var(--mwh-focus);
+    outline-offset: 2px;
+}
+
+.mod-whakaharatau-btn {
+    width: 4rem;
+    height: 4rem;
+}
+
+.mod-whakaharatau-btn[disabled],
+.mod-whakaharatau-btn[aria-disabled="true"] {
+    cursor: default;
+}
+
+.mod-whakaharatau-btn[disabled] {
+    opacity: 0.4;
+}
+
+.mod-whakaharatau-play .mod-whakaharatau-icon {
+    transition: transform 150ms ease-out;
+}
+
+.mod-whakaharatau-play:hover .mod-whakaharatau-icon {
+    transform: scale(1.08);
+}
+
+/* While a clip plays, its speaker is drawn larger and darker. */
+.mod-whakaharatau-play.is-playing {
+    color: var(--mwh-navy-dark);
+}
+
+.mod-whakaharatau-play.is-playing .mod-whakaharatau-icon {
+    transform: scale(1.25);
+}
+
+.mod-whakaharatau-promptplay {
+    align-self: flex-start;
+}
+
+/* Option rows: speaker = play, dart = choose and submit. */
+.mod-whakaharatau-options {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mod-whakaharatau-option-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.mod-whakaharatau-choose {
+    color: var(--mwh-maroon);
+}
+
+.mod-whakaharatau-option[data-state="wrong"] .mod-whakaharatau-choose,
+.mod-whakaharatau-option[data-state="wrong"] .mod-whakaharatau-mark {
+    color: var(--mwh-maroon);
+}
+
+.mod-whakaharatau-option[data-state="correct"] .mod-whakaharatau-choose,
+.mod-whakaharatau-option[data-state="revealed"] .mod-whakaharatau-choose,
+.mod-whakaharatau-option[data-state="correct"] .mod-whakaharatau-mark,
+.mod-whakaharatau-option[data-state="revealed"] .mod-whakaharatau-mark {
+    color: var(--mwh-green);
+}
+
+/* Feedback only at the end: the chosen dart is locked in with a ring, no tick or X. */
+.mod-whakaharatau-option[data-state="chosen"] .mod-whakaharatau-choose {
+    box-shadow: inset 0 0 0 3px var(--mwh-maroon);
+}
+
+/* The answer the learner did not find is ringed (tries ran out). */
+.mod-whakaharatau-option[data-state="revealed"] .mod-whakaharatau-choose,
+.mod-whakaharatau-option[data-state="revealed"] .mod-whakaharatau-mark {
+    box-shadow: inset 0 0 0 3px var(--mwh-green);
+}
+
+/* When the slide is finished, the darts of the rows not chosen disappear; the speakers stay. */
+.mod-whakaharatau-slide.is-finished .mod-whakaharatau-option[data-state="none"] .mod-whakaharatau-choose {
+    visibility: hidden;
+}
+
+.mod-whakaharatau-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.75rem;
+}
+
+.mod-whakaharatau-transcript {
+    margin: 0.125rem 0 0.25rem 0.5rem;
+    font-size: 0.9375rem;
+}
+
+.mod-whakaharatau-prompt {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.mod-whakaharatau-prompt p:last-child {
+    margin-bottom: 0;
+}
+
+.mod-whakaharatau-status {
+    min-height: 1.5em;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Progress. */
+.mod-whakaharatau-progress {
+    display: grid;
+    gap: 0.375rem;
+}
+
+.mod-whakaharatau-slideheading {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.mod-whakaharatau-progressbar {
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: var(--mwh-panel-soft);
+    overflow: hidden;
+}
+
+.mod-whakaharatau-progressbar-fill {
+    display: block;
+    height: 100%;
+    background-color: var(--mwh-navy);
+}
+
+/* The exit X (navy) at the top right of the card. */
+.mod-whakaharatau-exit {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background-color: var(--mwh-panel);
+}
+
+.mod-whakaharatau-exit .mod-whakaharatau-icon {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* The koru arrow at the bottom right, over the card's edge. */
+.mod-whakaharatau-next {
+    position: absolute;
+    right: -2rem;
+    bottom: -2rem;
+    z-index: 2;
+    width: 7rem;
+    height: 7rem;
+    animation: mod-whakaharatau-appear 300ms ease-out backwards;
+}
+
+.mod-whakaharatau-next .mod-whakaharatau-icon {
+    width: 6.5rem;
+    height: 6.5rem;
+}
+
+@keyframes mod-whakaharatau-appear {
+    from {
+        opacity: 0;
+        transform: translateX(-1rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Start screen buttons. */
+.mod-whakaharatau-startactions,
+.mod-whakaharatau-endactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.mod-whakaharatau-start-button {
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.mod-whakaharatau-start-button:hover {
+    background-color: var(--mwh-panel-soft);
+}
+
+.mod-whakaharatau-start-button .mod-whakaharatau-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+.mod-whakaharatau-secondary {
+    min-height: 44px;
+    padding: 0.375rem 1rem;
+    border: 2px solid var(--mwh-navy);
+    border-radius: 999px;
+    background-color: var(--mwh-panel-soft);
+    color: var(--mwh-navy);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mod-whakaharatau-secondary:hover {
+    background-color: var(--mwh-panel);
+}
+
+/* Round banner. */
+.mod-whakaharatau-roundbanner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.mod-whakaharatau-roundtitle {
+    margin: 0;
+    font-size: 3rem;
+    color: var(--mwh-navy);
+    animation: mod-whakaharatau-appear 300ms ease-out backwards;
+}
+
+.mod-whakaharatau-rounddetail {
+    margin: 0.5rem 0 0;
+    font-size: 1.25rem;
+}
+
+/* End screen. */
+.mod-whakaharatau-end {
+    display: block;
+    padding: 2.5rem 5rem 2.5rem 2.5rem;
+}
+
+.mod-whakaharatau-endbody {
+    display: grid;
+    gap: 1rem;
+}
+
+.mod-whakaharatau-score {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 0;
+    color: var(--mwh-navy);
+}
+
+.mod-whakaharatau-score-value {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.mod-whakaharatau-score-percent {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.mod-whakaharatau-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mod-whakaharatau-thumb {
+    position: relative;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: var(--mwh-panel-soft);
+}
+
+.mod-whakaharatau-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mod-whakaharatau-thumb .mod-whakaharatau-icon {
+    position: absolute;
+    right: 0.125rem;
+    bottom: 0.125rem;
+    width: 2rem;
+    height: 2rem;
+}
+
+.mod-whakaharatau-thumb.is-correct {
+    color: var(--mwh-green);
+    box-shadow: inset 0 0 0 3px var(--mwh-green);
+}
+
+.mod-whakaharatau-thumb.is-wrong {
+    color: var(--mwh-maroon);
+    box-shadow: inset 0 0 0 3px var(--mwh-maroon);
+}
+
+.mod-whakaharatau-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.mod-whakaharatau-stat {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background-color: var(--mwh-panel-soft);
+}
+
+.mod-whakaharatau-stat dt {
+    font-weight: 600;
+}
+
+.mod-whakaharatau-stat dd {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--mwh-navy);
+}
+
+/* Review. */
+.mod-whakaharatau-review {
+    display: block;
+    padding: 2.5rem 5rem 2.5rem 2.5rem;
+}
+
+.mod-whakaharatau-reviewlist {
+    display: grid;
+    gap: 1.25rem;
+    margin: 1rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mod-whakaharatau-reviewheading {
+    font-size: 1.125rem;
+    margin: 0 0 0.5rem;
+}
+
+.mod-whakaharatau-reviewbody {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) 2fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.mod-whakaharatau-reviewfigure img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+}
+
+/* Narrow players (phones, narrow course columns): the image stacks above the option rows. */
+@container (max-width: 700px) { /* stylelint-disable-line csstree/validator */
+    .mod-whakaharatau-screen {
+        grid-template-columns: 1fr;
+    }
+
+    .mod-whakaharatau-figure {
+        width: 100%;
+        height: 14rem;
+        min-height: 0;
+        border-radius: var(--mwh-radius) var(--mwh-radius) 0 0;
+    }
+
+    .mod-whakaharatau-image {
+        mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+    }
+
+    .mod-whakaharatau-panel {
+        grid-row: 2;
+        grid-column: 1;
+        padding: 0.5rem 1.25rem 5rem;
+    }
+
+    .mod-whakaharatau-end,
+    .mod-whakaharatau-review {
+        padding: 4.5rem 1.25rem 2rem;
+    }
+
+    .mod-whakaharatau-reviewbody {
+        grid-template-columns: 1fr;
+    }
+
+    .mod-whakaharatau-next {
+        right: -0.5rem;
+        bottom: -1.5rem;
+        width: 5rem;
+        height: 5rem;
+    }
+
+    .mod-whakaharatau-next .mod-whakaharatau-icon {
+        width: 4.5rem;
+        height: 4.5rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .mod-whakaharatau-player {
+        --mwh-radius: 1.5rem;
+    }
+
+    .mod-whakaharatau-stage {
+        padding: 0.75rem 0.75rem 2rem;
+    }
+
+    .mod-whakaharatau-option-controls {
+        gap: 0.75rem;
+    }
+
+    .mod-whakaharatau-score-value {
+        font-size: 2.5rem;
+    }
+}
+
+/* Forced colours (Windows High Contrast) replace background colours, which would hide the masked icons. */
+@media (forced-colors: active) {
+    .mod-whakaharatau-icon {
+        forced-color-adjust: none;
+        background-color: ButtonText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mod-whakaharatau-play .mod-whakaharatau-icon,
+    .mod-whakaharatau-next,
+    .mod-whakaharatau-roundtitle {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* Authoring pages (Edit slides, Import review). */
+.mod_whakaharatau-slidethumb img,
+.mod_whakaharatau-importthumb {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+}
+
+.mod_whakaharatau-slideitem.sortable-list-is-dragged {
+    opacity: 0.6;
+}
+
+/* Teacher report. */
+.mod-whakaharatau-report-thumb {
+    max-width: 6rem;
+    max-height: 4rem;
+}
+
+.mod-whakaharatau-report-progress {
+    height: 0.5rem;
+}
+
+/* The hidden attribute wins over the display rules above (kept last, two classes). */
+.mod-whakaharatau-player [hidden] {
+    display: none;
+}

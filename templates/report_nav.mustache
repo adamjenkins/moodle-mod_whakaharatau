@@ -1,0 +1,57 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/report_nav
+
+    The view switch of the teacher report: Learners or Slides, and Test attempts or Practice sessions.
+
+    Context variables required for this template:
+    * views - list of {url, label, active}
+    * modes - list of {url, label, active}
+
+    Example context (json):
+    {
+        "views": [
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=attempts", "label": "Learners", "active": true},
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=slides", "label": "Slides", "active": false}
+        ],
+        "modes": [
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&attemptmode=1", "label": "Test attempts", "active": false},
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&attemptmode=0", "label": "Practice sessions", "active": true}
+        ]
+    }
+}}
+<div class="mod-whakaharatau-report-nav d-flex flex-wrap gap-3 mb-3">
+    <nav aria-label="{{#str}} report_viewlabel, mod_whakaharatau {{/str}}">
+        <ul class="nav nav-pills">
+            {{#views}}
+            <li class="nav-item">
+                <a class="nav-link{{#active}} active{{/active}}" href="{{url}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>
+            </li>
+            {{/views}}
+        </ul>
+    </nav>
+    <nav aria-label="{{#str}} report_modelabel, mod_whakaharatau {{/str}}">
+        <ul class="nav nav-pills">
+            {{#modes}}
+            <li class="nav-item">
+                <a class="nav-link{{#active}} active{{/active}}" href="{{url}}"{{#active}} aria-current="true"{{/active}}>{{label}}</a>
+            </li>
+            {{/modes}}
+        </ul>
+    </nav>
+</div>

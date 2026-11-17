@@ -1,0 +1,128 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/end_screen
+
+    The end screen. Test: the score ("16 / 20") and percentage, a strip of slide thumbnails with a tick
+    or an X, and Review answers / Try again / Back. Practice: the session summary (slides played, right
+    first time, rounds, best streak) and Go again / Practise missed slides / Back.
+
+    Data attributes required for JS:
+    * data-region="endscreen"
+    * data-action="review" | "tryagain" | "goagain" | "practisemissed" | "back" | "exit"
+
+    Context variables required for this template:
+    * idprefix - prefix of every DOM id
+    * heading - "Your result" or "Session summary"
+    * istest - Test layout
+    * scoretext, percenttext - Test score, e.g. "16 / 20" and "80%"
+    * scorelabel - the score as a sentence for screen readers
+    * thumbs - list of: imageurl, label (e.g. "Slide 3: correct"), correct
+    * stats - list of: label, value (Practice)
+    * showreview, showtryagain, showgoagain, showmissed - which buttons to show
+    * backlabel - "Back to course" (activity page) or "Back to the start" (course page)
+    * exitlabel - name of the exit X
+
+    Example context (json):
+    {
+        "idprefix": "mod-whakaharatau-12",
+        "heading": "Your result",
+        "istest": true,
+        "scoretext": "16 / 20",
+        "percenttext": "80%",
+        "scorelabel": "You scored 16 out of 20 (80%).",
+        "thumbs": [
+            {
+                "imageurl": "https://example.com/pluginfile.php/40/mod_whakaharatau/slideimage/5/1/image.jpg",
+                "label": "Slide 1: correct",
+                "correct": true
+            },
+            {
+                "imageurl": "",
+                "label": "Slide 2: not correct",
+                "correct": false
+            }
+        ],
+        "stats": [],
+        "showreview": true,
+        "showtryagain": true,
+        "showgoagain": false,
+        "showmissed": false,
+        "backlabel": "Back to course",
+        "exitlabel": "Exit"
+    }
+}}
+<div class="mod-whakaharatau-screen mod-whakaharatau-end" data-region="endscreen">
+    <div class="mod-whakaharatau-endbody">
+        <h3 class="mod-whakaharatau-title" id="{{idprefix}}-title" tabindex="-1">{{heading}}</h3>
+        {{#istest}}
+            <p class="mod-whakaharatau-score">
+                <span class="mod-whakaharatau-score-value" aria-hidden="true">{{scoretext}}</span>
+                <span class="mod-whakaharatau-score-percent" aria-hidden="true">{{percenttext}}</span>
+                <span class="visually-hidden">{{scorelabel}}</span>
+            </p>
+            {{#thumbs.0}}
+                <ol class="mod-whakaharatau-thumbs">
+                    {{#thumbs}}
+                        <li class="mod-whakaharatau-thumb {{#correct}}is-correct{{/correct}}{{^correct}}is-wrong{{/correct}}">
+                            {{#imageurl}}
+                                <img src="{{imageurl}}" alt="" loading="lazy" decoding="async">
+                            {{/imageurl}}
+                            <span class="mod-whakaharatau-icon {{#correct}}mod-whakaharatau-icon-tick{{/correct}}{{^correct}}mod-whakaharatau-icon-wrong{{/correct}}" aria-hidden="true"></span>
+                            <span class="visually-hidden">{{label}}</span>
+                        </li>
+                    {{/thumbs}}
+                </ol>
+            {{/thumbs.0}}
+        {{/istest}}
+        {{^istest}}
+            <dl class="mod-whakaharatau-stats">
+                {{#stats}}
+                    <div class="mod-whakaharatau-stat">
+                        <dt>{{label}}</dt>
+                        <dd>{{value}}</dd>
+                    </div>
+                {{/stats}}
+            </dl>
+        {{/istest}}
+        <div class="mod-whakaharatau-endactions">
+            {{#showreview}}
+                <button type="button" class="mod-whakaharatau-secondary" data-action="review">{{#str}} reviewanswers, mod_whakaharatau {{/str}}</button>
+            {{/showreview}}
+            {{#showtryagain}}
+                <button type="button" class="mod-whakaharatau-start-button" data-action="tryagain">
+                    <span class="mod-whakaharatau-start-label">{{#str}} tryagain, mod_whakaharatau {{/str}}</span>
+                    <span class="mod-whakaharatau-icon mod-whakaharatau-icon-choose" aria-hidden="true"></span>
+                </button>
+            {{/showtryagain}}
+            {{#showgoagain}}
+                <button type="button" class="mod-whakaharatau-start-button" data-action="goagain">
+                    <span class="mod-whakaharatau-start-label">{{#str}} goagain, mod_whakaharatau {{/str}}</span>
+                    <span class="mod-whakaharatau-icon mod-whakaharatau-icon-next" aria-hidden="true"></span>
+                </button>
+            {{/showgoagain}}
+            {{#showmissed}}
+                <button type="button" class="mod-whakaharatau-secondary" data-action="practisemissed">{{#str}} practisemissed, mod_whakaharatau {{/str}}</button>
+            {{/showmissed}}
+            <button type="button" class="mod-whakaharatau-secondary" data-action="back">{{backlabel}}</button>
+        </div>
+    </div>
+    <button type="button" class="mod-whakaharatau-exit" data-action="exit">
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-wrong" aria-hidden="true"></span>
+        <span class="visually-hidden">{{exitlabel}}</span>
+    </button>
+</div>

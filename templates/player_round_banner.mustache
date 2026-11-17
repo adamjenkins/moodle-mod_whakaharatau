@@ -1,0 +1,57 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/player_round_banner
+
+    The short "Round N" banner shown between rounds (Repeat All, Missed only). The player moves on to the
+    round's first slide by itself after a moment; the Next arrow moves on at once.
+
+    Data attributes required for JS:
+    * data-region="roundbanner"
+    * data-action="next" | "exit"
+
+    Context variables required for this template:
+    * idprefix - prefix of every DOM id
+    * roundlabel - e.g. "Round 2"
+    * detail - e.g. "3 slides to go"
+    * exitlabel, nextlabel - names of the exit X and Next arrow
+
+    Example context (json):
+    {
+        "idprefix": "mod-whakaharatau-12",
+        "roundlabel": "Round 2",
+        "detail": "3 slides to go",
+        "exitlabel": "Exit",
+        "nextlabel": "Start the round"
+    }
+}}
+<div class="mod-whakaharatau-screen mod-whakaharatau-roundbanner" data-region="roundbanner">
+    <div class="mod-whakaharatau-roundbanner-inner">
+        <h3 class="mod-whakaharatau-roundtitle" id="{{idprefix}}-title" tabindex="-1">{{roundlabel}}</h3>
+        {{#detail}}
+            <p class="mod-whakaharatau-rounddetail">{{detail}}</p>
+        {{/detail}}
+    </div>
+    <button type="button" class="mod-whakaharatau-exit" data-action="exit">
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-wrong" aria-hidden="true"></span>
+        <span class="visually-hidden">{{exitlabel}}</span>
+    </button>
+    <button type="button" class="mod-whakaharatau-next" data-action="next">
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-next" aria-hidden="true"></span>
+        <span class="visually-hidden">{{nextlabel}}</span>
+    </button>
+</div>

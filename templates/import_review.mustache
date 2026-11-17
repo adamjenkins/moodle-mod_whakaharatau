@@ -1,0 +1,246 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/import_review
+
+    Import step 2: the slides that will be made, for the teacher to check before anything is saved.
+    Each row has a thumbnail, the clips with players and a correct-answer radio, an alt text field and a
+    "decorative" tick box. Files that were not matched or were refused are listed below the table.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * cmid, actionurl, sesskey, stageid, mode, planhash, source, modetext, replace
+    * hasslides, slidecount, slides - list of {index, number, title, hasimage, imageurl, imagename, alttext,
+      missingalt, decorative, prompt, promptlang, haspromptaudio, promptaudiourl, promptaudioname, options
+      [{index, slideindex, number, name, audiourl, transcript, checked, playlabel}], hasoptions, nocorrect, warnings [{text}],
+      haswarnings}
+    * planwarnings [{text}], errors [{text}], hasunmatched, unmatched [{name}], hasrejected, rejected [{name, reason}]
+
+    Example context (json):
+    {
+        "cmid": 12,
+        "actionurl": "https://example.com/mod/whakaharatau/import.php",
+        "sesskey": "abc123",
+        "stageid": 456,
+        "mode": "append",
+        "planhash": "0123456789abcdef",
+        "source": "Slides were matched by file name.",
+        "modetext": "The new slides are added after the 3 existing slides.",
+        "replace": false,
+        "hasslides": true,
+        "slidecount": 1,
+        "slides": [{
+            "index": 0,
+            "number": 1,
+            "title": "Slide 1",
+            "hasimage": true,
+            "imageurl": "https://example.com/draftfile.php/5/user/draft/456/01.jpg",
+            "imagename": "01.jpg",
+            "alttext": "",
+            "missingalt": true,
+            "decorative": false,
+            "prompt": "",
+            "promptlang": "",
+            "haspromptaudio": false,
+            "promptaudiourl": "",
+            "promptaudioname": "",
+            "options": [
+                {"index": 0, "slideindex": 0, "number": 1, "name": "01-a.mp3", "audiourl": "https://example.com/draftfile.php/5/user/draft/456/01-a.mp3",
+                 "transcript": "", "checked": false, "playlabel": "Slide 1: play 01-a.mp3"},
+                {"index": 1, "slideindex": 0, "number": 2, "name": "01-b-correct.mp3", "audiourl": "https://example.com/draftfile.php/5/user/draft/456/01-b-correct.mp3",
+                 "transcript": "", "checked": true, "playlabel": "Slide 1: play 01-b-correct.mp3"}
+            ],
+            "hasoptions": true,
+            "nocorrect": false,
+            "warnings": [],
+            "haswarnings": false
+        }],
+        "planwarnings": [],
+        "errors": [],
+        "hasunmatched": true,
+        "unmatched": [{"name": "notes.mp3"}],
+        "hasrejected": true,
+        "rejected": [{"name": "readme.txt", "reason": "Not an accepted image or audio file."}]
+    }
+}}
+<div class="mod_whakaharatau-importreview">
+    {{#errors}}
+        <div class="alert alert-danger" role="alert">{{text}}</div>
+    {{/errors}}
+    {{#planwarnings}}
+        <div class="alert alert-warning">{{text}}</div>
+    {{/planwarnings}}
+    <p>{{source}}</p>
+    <p class="{{#replace}}alert alert-warning{{/replace}}">{{modetext}}</p>
+
+    <form method="post" action="{{actionurl}}">
+        <input type="hidden" name="id" value="{{cmid}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="stage" value="{{stageid}}">
+        <input type="hidden" name="importmode" value="{{mode}}">
+        <input type="hidden" name="planhash" value="{{planhash}}">
+        <input type="hidden" name="step" value="confirm">
+
+        {{#hasslides}}
+            <div class="table-responsive">
+                <table class="table generaltable mod_whakaharatau-importtable">
+                    <caption>{{#str}} importreviewcaption, mod_whakaharatau, {{slidecount}} {{/str}}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} importcolslide, mod_whakaharatau {{/str}}</th>
+                            <th scope="col">{{#str}} importcolimage, mod_whakaharatau {{/str}}</th>
+                            <th scope="col">{{#str}} alttext, mod_whakaharatau {{/str}}</th>
+                            <th scope="col">{{#str}} importcolclips, mod_whakaharatau {{/str}}</th>
+                            <th scope="col">{{#str}} importcolnotes, mod_whakaharatau {{/str}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#slides}}
+                            <tr>
+                                <th scope="row">
+                                    <input type="hidden" name="include[{{index}}]" value="0">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="include[{{index}}]" value="1"
+                                            id="mod_whakaharatau-include-{{index}}" checked>
+                                        <label class="form-check-label" for="mod_whakaharatau-include-{{index}}">
+                                            {{title}}<span class="visually-hidden"> {{#str}} importinclude, mod_whakaharatau {{/str}}</span>
+                                        </label>
+                                    </div>
+                                </th>
+                                <td>
+                                    {{#hasimage}}
+                                        <img src="{{imageurl}}" alt="" class="img-fluid rounded mod_whakaharatau-importthumb"
+                                            width="120" height="90" loading="lazy">
+                                        <div class="small text-break">{{imagename}}</div>
+                                    {{/hasimage}}
+                                    {{^hasimage}}
+                                        <span class="badge bg-warning text-dark">{{#str}} noimage, mod_whakaharatau {{/str}}</span>
+                                    {{/hasimage}}
+                                </td>
+                                <td>
+                                    <label class="visually-hidden" for="mod_whakaharatau-alt-{{index}}">
+                                        {{#str}} alttextforslide, mod_whakaharatau, {{number}} {{/str}}
+                                    </label>
+                                    <input type="text" class="form-control" name="alttext[{{index}}]" value="{{alttext}}"
+                                        id="mod_whakaharatau-alt-{{index}}"
+                                        {{#missingalt}}aria-describedby="mod_whakaharatau-altmissing-{{index}}"{{/missingalt}}>
+                                    {{#missingalt}}
+                                        <div class="small text-danger" id="mod_whakaharatau-altmissing-{{index}}">
+                                            {{#pix}} i/warning, core {{/pix}}{{#str}} importaltmissing, mod_whakaharatau {{/str}}
+                                        </div>
+                                    {{/missingalt}}
+                                    <input type="hidden" name="decorative[{{index}}]" value="0">
+                                    <div class="form-check mt-1">
+                                        <input class="form-check-input" type="checkbox" name="decorative[{{index}}]" value="1"
+                                            id="mod_whakaharatau-decorative-{{index}}" {{#decorative}}checked{{/decorative}}>
+                                        <label class="form-check-label" for="mod_whakaharatau-decorative-{{index}}">
+                                            {{#str}} decorative_label, mod_whakaharatau {{/str}}
+                                        </label>
+                                    </div>
+                                    {{#prompt}}
+                                        <div class="small mt-1">
+                                            {{#str}} prompt, mod_whakaharatau {{/str}}:
+                                            <span {{#promptlang}}lang="{{promptlang}}"{{/promptlang}}>{{prompt}}</span>
+                                        </div>
+                                    {{/prompt}}
+                                </td>
+                                <td>
+                                    {{#hasoptions}}
+                                        <fieldset>
+                                            <legend class="visually-hidden">{{#str}} importcorrectforslide, mod_whakaharatau, {{number}} {{/str}}</legend>
+                                            <ol class="list-unstyled mb-0">
+                                                {{#options}}
+                                                    <li class="mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="correct[{{slideindex}}]"
+                                                                value="{{index}}" id="mod_whakaharatau-correct-{{slideindex}}-{{index}}"
+                                                                {{#checked}}checked{{/checked}}>
+                                                            <label class="form-check-label text-break"
+                                                                for="mod_whakaharatau-correct-{{slideindex}}-{{index}}">
+                                                                {{name}}
+                                                            </label>
+                                                        </div>
+                                                        {{#audiourl}}
+                                                            <audio controls preload="none" src="{{audiourl}}" aria-label="{{playlabel}}"
+                                                                class="mw-100"></audio>
+                                                        {{/audiourl}}
+                                                        {{#transcript}}<div class="small">{{transcript}}</div>{{/transcript}}
+                                                    </li>
+                                                {{/options}}
+                                                <li>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="correct[{{index}}]" value="-1"
+                                                            id="mod_whakaharatau-correct-{{index}}-none" {{#nocorrect}}checked{{/nocorrect}}>
+                                                        <label class="form-check-label" for="mod_whakaharatau-correct-{{index}}-none">
+                                                            {{#str}} importcorrectnotset, mod_whakaharatau {{/str}}
+                                                        </label>
+                                                    </div>
+                                                </li>
+                                            </ol>
+                                        </fieldset>
+                                    {{/hasoptions}}
+                                    {{#haspromptaudio}}
+                                        <div class="small mt-2">
+                                            {{#str}} promptaudio, mod_whakaharatau {{/str}}: {{promptaudioname}}
+                                        </div>
+                                    {{/haspromptaudio}}
+                                </td>
+                                <td>
+                                    {{#haswarnings}}
+                                        <ul class="small mb-0 ps-3">
+                                            {{#warnings}}<li>{{text}}</li>{{/warnings}}
+                                        </ul>
+                                    {{/haswarnings}}
+                                </td>
+                            </tr>
+                        {{/slides}}
+                    </tbody>
+                </table>
+            </div>
+        {{/hasslides}}
+        {{^hasslides}}
+            <div class="alert alert-warning" role="alert">{{#str}} importnoslides, mod_whakaharatau {{/str}}</div>
+        {{/hasslides}}
+
+        {{#hasunmatched}}
+            <h3 class="h5">{{#str}} importunmatched, mod_whakaharatau {{/str}}</h3>
+            <ul>
+                {{#unmatched}}<li class="text-break">{{name}}</li>{{/unmatched}}
+            </ul>
+        {{/hasunmatched}}
+        {{#hasrejected}}
+            <h3 class="h5">{{#str}} importrejected, mod_whakaharatau {{/str}}</h3>
+            <ul>
+                {{#rejected}}<li class="text-break">{{name}}: {{reason}}</li>{{/rejected}}
+            </ul>
+        {{/hasrejected}}
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            {{#hasslides}}
+                <button type="submit" class="btn btn-primary" name="confirm" value="1">
+                    {{#str}} importconfirm, mod_whakaharatau, {{slidecount}} {{/str}}
+                </button>
+            {{/hasslides}}
+            <button type="submit" class="btn btn-secondary" name="cancelimport" value="1">{{#str}} cancel, core {{/str}}</button>
+        </div>
+    </form>
+</div>

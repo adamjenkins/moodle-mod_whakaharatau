@@ -1,0 +1,125 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/player_review
+
+    Review of a finished attempt: each slide's image, every option with its play button, a tick on the
+    correct option, an X on each wrong choice, and the transcripts.
+
+    Data attributes required for JS:
+    * data-region="review", "option", "playlabel", "pauselabel"
+    * data-action="play" | "backtoresults" | "exit"
+
+    Context variables required for this template:
+    * idprefix - prefix of every DOM id
+    * heading - "Review answers"
+    * items - list of: slideid, label (e.g. "Slide 3"), imageurl, alttext, prompthtml, promptlang, options
+      (list of: optionid, audiourl, playlabel, pauselabel, state (none, wrong, correct, revealed), marklabel,
+      markicon (tick or wrong, empty for none), transcript)
+    * exitlabel - name of the exit X
+
+    Example context (json):
+    {
+        "idprefix": "mod-whakaharatau-12",
+        "heading": "Review answers",
+        "exitlabel": "Exit",
+        "items": [
+            {
+                "slideid": 5,
+                "label": "Slide 1",
+                "imageurl": "https://example.com/pluginfile.php/40/mod_whakaharatau/slideimage/5/1/image.jpg",
+                "alttext": "Two people beside a car",
+                "prompthtml": "",
+                "promptlang": "",
+                "options": [
+                    {
+                        "optionid": 21,
+                        "audiourl": "https://example.com/pluginfile.php/40/mod_whakaharatau/optionaudio/21/1/audio.mp3",
+                        "playlabel": "Play option 1 of 2",
+                        "pauselabel": "Pause option 1 of 2",
+                        "state": "wrong",
+                        "marklabel": "Option 1: your choice, not correct",
+                        "markicon": "wrong",
+                        "transcript": "Kei te kai ia."
+                    },
+                    {
+                        "optionid": 22,
+                        "audiourl": "https://example.com/pluginfile.php/40/mod_whakaharatau/optionaudio/22/1/audio.mp3",
+                        "playlabel": "Play option 2 of 2",
+                        "pauselabel": "Pause option 2 of 2",
+                        "state": "revealed",
+                        "marklabel": "Option 2: the correct answer",
+                        "markicon": "tick",
+                        "transcript": "Kei te inu wai ia."
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div class="mod-whakaharatau-screen mod-whakaharatau-review" data-region="review">
+    <h3 class="mod-whakaharatau-title" id="{{idprefix}}-title" tabindex="-1">{{heading}}</h3>
+    <ol class="mod-whakaharatau-reviewlist">
+        {{#items}}
+            <li class="mod-whakaharatau-reviewitem">
+                <h4 class="mod-whakaharatau-reviewheading">{{label}}</h4>
+                <div class="mod-whakaharatau-reviewbody">
+                    <div class="mod-whakaharatau-reviewfigure">
+                        {{#imageurl}}
+                            <img src="{{imageurl}}" alt="{{alttext}}" loading="lazy" decoding="async">
+                        {{/imageurl}}
+                    </div>
+                    <div>
+                        {{#prompthtml}}
+                            <div class="mod-whakaharatau-prompt"{{#promptlang}} lang="{{promptlang}}"{{/promptlang}}>{{{prompthtml}}}</div>
+                        {{/prompthtml}}
+                        <ul class="mod-whakaharatau-options">
+                            {{#options}}
+                                <li class="mod-whakaharatau-option" data-region="option" data-optionid="{{optionid}}" data-state="{{state}}">
+                                    <div class="mod-whakaharatau-option-controls">
+                                        <button type="button" class="mod-whakaharatau-btn mod-whakaharatau-play" data-action="play"
+                                            data-audiourl="{{audiourl}}"{{^audiourl}} disabled{{/audiourl}}>
+                                            <span class="mod-whakaharatau-icon mod-whakaharatau-icon-play" aria-hidden="true"></span>
+                                            <span class="visually-hidden" data-region="playlabel">{{playlabel}}</span>
+                                            <span class="visually-hidden" data-region="pauselabel" hidden>{{pauselabel}}</span>
+                                        </button>
+                                        <span class="mod-whakaharatau-mark">
+                                            {{#markicon}}
+                                                <span class="mod-whakaharatau-icon mod-whakaharatau-icon-{{markicon}}" aria-hidden="true"></span>
+                                            {{/markicon}}
+                                            <span class="visually-hidden">{{marklabel}}</span>
+                                        </span>
+                                    </div>
+                                    {{#transcript}}
+                                        <p class="mod-whakaharatau-transcript">{{transcript}}</p>
+                                    {{/transcript}}
+                                </li>
+                            {{/options}}
+                        </ul>
+                    </div>
+                </div>
+            </li>
+        {{/items}}
+    </ol>
+    <div class="mod-whakaharatau-endactions">
+        <button type="button" class="mod-whakaharatau-secondary" data-action="backtoresults">{{#str}} backtoresults, mod_whakaharatau {{/str}}</button>
+    </div>
+    <button type="button" class="mod-whakaharatau-exit" data-action="exit">
+        <span class="mod-whakaharatau-icon mod-whakaharatau-icon-wrong" aria-hidden="true"></span>
+        <span class="visually-hidden">{{exitlabel}}</span>
+    </button>
+</div>

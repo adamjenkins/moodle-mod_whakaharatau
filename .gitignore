@@ -1,0 +1,4 @@
+# Local tooling output; amd/build is committed, built by grunt.
+node_modules/
+.DS_Store
+*.swp

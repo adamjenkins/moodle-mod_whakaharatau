@@ -1,0 +1,92 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/player
+
+    The player shell: the lattice stage, the card (holding the start screen until the JavaScript takes
+    over) and the live region. Every id is scoped by the course module id.
+
+    Classes required for JS:
+    * none; the JavaScript finds the player by data-region="mod-whakaharatau-player" and data-cmid.
+
+    Data attributes required for JS:
+    * data-cmid, data-inline, data-showprogress, data-autoplay, data-mode, data-repeatmode, data-courseurl,
+      data-hasinprogress, data-canstartnew, data-lastattemptid
+
+    Context variables required for this template:
+    * cmid - course module id
+    * idprefix - prefix of every DOM id
+    * inline - shown on the course page
+    * inlineflag, showprogress, autoplay, mode, repeatmode, hasinprogress, canstartnew - 0/1 flags or numbers
+    * attemptsleft - Test attempts left, -1 for unlimited (or Practice)
+    * courseurl - course page URL
+    * lastattemptid - latest finished attempt of the user, 0 if none
+    * the start screen's variables (mod_whakaharatau/start_screen)
+
+    Example context (json):
+    {
+        "cmid": 12,
+        "idprefix": "mod-whakaharatau-12",
+        "inline": false,
+        "inlineflag": 0,
+        "name": "H1.12 Whakaharatau",
+        "introhtml": "<p>Listen to each clip and choose the one that matches the picture.</p>",
+        "cover": "https://example.com/pluginfile.php/40/mod_whakaharatau/cover/0/1/cover.png",
+        "factstext": "20 slides · Practice",
+        "playmodetext": "In order · One pass",
+        "previoustext": "Last session: 15 of 20 right first time",
+        "courseurl": "https://example.com/course/view.php?id=2#module-12",
+        "showprogress": 1,
+        "autoplay": 0,
+        "mode": 0,
+        "repeatmode": 0,
+        "istest": false,
+        "playable": true,
+        "canattempt": true,
+        "hasinprogress": 0,
+        "canstartnew": 1,
+        "attemptsleft": -1,
+        "showstart": true,
+        "showcontinue": false,
+        "showstartagain": false,
+        "noattemptsleft": false,
+        "cannotattempt": false,
+        "notplayable": false,
+        "editurl": "",
+        "lastattemptid": 3
+    }
+}}
+<div class="mod-whakaharatau-player{{#inline}} mod-whakaharatau-player-inline{{/inline}}" id="{{idprefix}}"
+    data-region="mod-whakaharatau-player"
+    data-cmid="{{cmid}}"
+    data-inline="{{inlineflag}}"
+    data-showprogress="{{showprogress}}"
+    data-autoplay="{{autoplay}}"
+    data-mode="{{mode}}"
+    data-repeatmode="{{repeatmode}}"
+    data-courseurl="{{courseurl}}"
+    data-hasinprogress="{{hasinprogress}}"
+    data-canstartnew="{{canstartnew}}"
+    data-attemptsleft="{{attemptsleft}}"
+    data-lastattemptid="{{lastattemptid}}">
+    <div class="mod-whakaharatau-stage">
+        <section class="mod-whakaharatau-card" data-region="card" aria-labelledby="{{idprefix}}-title">
+            {{> mod_whakaharatau/start_screen }}
+        </section>
+    </div>
+    <div class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-region="announce"></div>
+</div>
