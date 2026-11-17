@@ -25,6 +25,7 @@
 require(__DIR__ . '/../../config.php');
 
 use mod_whakaharatau\form\slide_form;
+use mod_whakaharatau\local\page_access;
 use mod_whakaharatau\local\slides;
 use mod_whakaharatau\output\edit_slides;
 
@@ -32,13 +33,9 @@ $id = required_param('id', PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
 $slideid = optional_param('slideid', 0, PARAM_INT);
 
-$cm = get_coursemodule_from_id('whakaharatau', $id, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-$instance = $DB->get_record('whakaharatau', ['id' => $cm->instance], '*', MUST_EXIST);
-
+[$course, $cm] = get_course_and_cm_from_cmid($id, 'whakaharatau');
 require_login($course, false, $cm);
-$context = context_module::instance($cm->id);
-require_capability('mod/whakaharatau:manage', $context);
+[$instance, $context] = page_access::require_page(page_access::EDIT, $cm);
 
 $listurl = new moodle_url('/mod/whakaharatau/edit.php', ['id' => $cm->id]);
 $pageparams = ['id' => $cm->id];

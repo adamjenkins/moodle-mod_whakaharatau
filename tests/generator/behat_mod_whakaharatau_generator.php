@@ -52,7 +52,27 @@ class behat_mod_whakaharatau_generator extends behat_generator_base {
                 'required' => ['activity'],
                 'switchids' => ['activity' => 'whakaharatauid'],
             ],
+            'attempts' => [
+                'singular' => 'attempt',
+                'datagenerator' => 'attempt',
+                'required' => ['activity', 'user'],
+                'switchids' => ['activity' => 'whakaharatauid', 'user' => 'userid'],
+            ],
         ];
+    }
+
+    /**
+     * Turn the Behat columns into create_attempt() fields: answers as a comma-separated list of right, wrong or
+     * wrongthenright; finish as 0 or 1.
+     *
+     * @param array $data row data
+     * @return array
+     */
+    protected function preprocess_attempt(array $data): array {
+        $answers = trim((string) ($data['answers'] ?? ''));
+        $data['answers'] = $answers === '' ? [] : array_map('trim', explode(',', $answers));
+        $data['finish'] = !empty($data['finish']);
+        return $data;
     }
 
     /**

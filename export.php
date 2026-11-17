@@ -26,17 +26,14 @@ require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/filelib.php');
 
 use mod_whakaharatau\local\exporter;
+use mod_whakaharatau\local\page_access;
 use mod_whakaharatau\local\slides;
 
 $id = required_param('id', PARAM_INT);
 
-$cm = get_coursemodule_from_id('whakaharatau', $id, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-$instance = $DB->get_record('whakaharatau', ['id' => $cm->instance], '*', MUST_EXIST);
-
+[$course, $cm] = get_course_and_cm_from_cmid($id, 'whakaharatau');
 require_login($course, false, $cm);
-$context = context_module::instance($cm->id);
-require_capability('mod/whakaharatau:manage', $context);
+[$instance, $context] = page_access::require_page(page_access::EXPORT, $cm);
 // Building the ZIP is work: only from this site's own Export link, not from a link on another site.
 require_sesskey();
 

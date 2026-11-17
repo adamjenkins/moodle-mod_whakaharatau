@@ -24,6 +24,7 @@
  */
 
 use mod_whakaharatau\local\instance_settings;
+use mod_whakaharatau\local\page_access;
 use mod_whakaharatau\local\report;
 
 require(__DIR__ . '/../../config.php');
@@ -36,9 +37,7 @@ $action = optional_param('action', '', PARAM_ALPHA);
 
 [$course, $cm] = get_course_and_cm_from_cmid($id, 'whakaharatau');
 require_login($course, false, $cm);
-$context = context_module::instance($cm->id);
-require_capability('mod/whakaharatau:viewreports', $context);
-$instance = $DB->get_record('whakaharatau', ['id' => $cm->instance], '*', MUST_EXIST);
+[$instance, $context] = page_access::require_page(page_access::REPORT, $cm);
 
 if ($view !== report::VIEW_SLIDES) {
     $view = report::VIEW_ATTEMPTS;
@@ -60,7 +59,7 @@ $candelete = has_capability('mod/whakaharatau:deleteattempts', $context);
 
 // Deleting attempts: the table form posts the ids, a confirmation page follows, then the delete.
 if ($action === 'delete') {
-    require_capability('mod/whakaharatau:deleteattempts', $context);
+    page_access::require_capabilities(page_access::DELETE_ATTEMPTS, $context);
     require_sesskey();
     $attemptids = optional_param_array('attemptid', [], PARAM_INT);
     if (!$attemptids) {
