@@ -74,24 +74,27 @@
     min-height: 26rem;
 }
 
-/* The image fills the left side and fades into the grey panel. */
+/* The image takes the left side and fades into the grey panel at its right edge. It is never cropped: it keeps
+   its own proportions, and a picture too tall for the screen is scaled down whole (contain), not cut. */
 .mod-whakaharatau-figure {
     grid-row: 1;
     grid-column: 1;
+    align-self: center;
     position: relative;
     z-index: 0;
     width: calc(100% + 4rem);
-    min-height: 100%;
     overflow: hidden;
     border-radius: var(--mwh-radius) 0 0 var(--mwh-radius);
 }
 
 .mod-whakaharatau-image {
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 80vh;
+    object-fit: contain;
+    mask-image: linear-gradient(to right, #000 85%, transparent 100%);
 }
 
 .mod-whakaharatau-panel {
@@ -567,14 +570,16 @@
     }
 
     .mod-whakaharatau-figure {
+        align-self: stretch;
         width: 100%;
-        height: 14rem;
-        min-height: 0;
         border-radius: var(--mwh-radius) var(--mwh-radius) 0 0;
     }
 
+    /* The whole picture above the option rows, never a cropped band; at most 60% of the screen height. */
     .mod-whakaharatau-image {
-        mask-image: linear-gradient(to bottom, #000 65%, transparent 100%);
+        margin: 0 auto;
+        max-height: 60vh;
+        mask-image: linear-gradient(to bottom, #000 90%, transparent 100%);
     }
 
     .mod-whakaharatau-panel {
