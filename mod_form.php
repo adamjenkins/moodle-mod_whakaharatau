@@ -227,6 +227,9 @@ class mod_whakaharatau_mod_form extends moodleform_mod {
                 $mform->hideIf($element, 'mode', 'eq', $practice);
             }
         }
+        // So the Grade section is not an empty heading in Practice mode (as in Test scoring above).
+        $mform->addElement('static', 'gradetestonlynote', '', get_string('testonlynote', 'mod_whakaharatau'));
+        $mform->hideIf('gradetestonlynote', 'mode', 'eq', $test);
 
         $this->standard_coursemodule_elements();
         $this->apply_admin_defaults();

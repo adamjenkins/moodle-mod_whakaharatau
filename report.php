@@ -73,9 +73,10 @@ if ($action === 'delete') {
     }
     if (optional_param('confirm', 0, PARAM_BOOL)) {
         $deleted = $report->delete_attempts($attemptids);
+        $notice = $attemptmode === instance_settings::MODE_TEST ? 'attemptsdeletedtest' : 'attemptsdeletedpractice';
         redirect(
             $url,
-            get_string('attemptsdeleted', 'mod_whakaharatau', $deleted),
+            get_string($notice, 'mod_whakaharatau', $deleted),
             null,
             \core\output\notification::NOTIFY_SUCCESS
         );
@@ -87,8 +88,11 @@ if ($action === 'delete') {
         'sesskey' => sesskey(),
     ]);
     echo $OUTPUT->header();
+    // The tab decides what was selected: Test attempts or practice sessions; one or several.
+    $confirmkey = 'deleteconfirm' . ($attemptmode === instance_settings::MODE_TEST ? 'test' : 'practice')
+        . (count($attemptids) === 1 ? 'one' : '');
     echo $OUTPUT->confirm(
-        get_string('deleteattemptsconfirm', 'mod_whakaharatau', count($attemptids)),
+        get_string($confirmkey, 'mod_whakaharatau', count($attemptids)),
         new single_button($confirmurl, get_string('delete'), 'post', single_button::BUTTON_DANGER),
         $url
     );

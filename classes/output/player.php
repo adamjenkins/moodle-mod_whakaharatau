@@ -92,6 +92,14 @@ class player implements renderable, templatable {
         }
         $hasinprogress = $inprogress !== null;
 
+        // Why someone who can view cannot take part: not logged in, a guest or not enrolled (they can enrol or log
+        // in), or enrolled in a role without the attempt capability, such as a non-editing teacher.
+        $cannotattempttext = '';
+        if (!$canattempt && $playable) {
+            $outsider = !isloggedin() || isguestuser() || !is_enrolled($context->get_course_context(), $USER, '', true);
+            $cannotattempttext = get_string($outsider ? 'cannotattempt' : 'cannotattemptrole', 'mod_whakaharatau');
+        }
+
         $courseurl = new moodle_url('/course/view.php', ['id' => $cm->course], 'module-' . $cm->id);
         $data = [
             'cmid' => (int) $cm->id,
@@ -107,7 +115,7 @@ class player implements renderable, templatable {
                     'mod_whakaharatau',
                     $slidecount
                 ),
-                'mode' => $this->get_mode_text($userid),
+                'mode' => $this->get_mode_text($userid, $canattempt),
             ]),
             'playmodetext' => instance_settings::get_playmode_description($instance),
             'previoustext' => $canattempt ? $this->get_previous_text($userid) : '',
@@ -127,6 +135,7 @@ class player implements renderable, templatable {
             'showstartagain' => $canattempt && $playable && $hasinprogress && $canstartnew,
             'noattemptsleft' => $canattempt && $playable && !$hasinprogress && !$canstartnew,
             'cannotattempt' => !$canattempt && $playable,
+            'cannotattempttext' => $cannotattempttext,
             'notplayable' => !$playable,
             'editurl' => $canmanage ? (new moodle_url('/mod/whakaharatau/edit.php', ['id' => $cm->id]))->out(false) : '',
             'lastattemptid' => $latest ? $latest->get_id() : 0,
@@ -155,16 +164,17 @@ class player implements renderable, templatable {
     }
 
     /**
-     * "Practice", "Test" or "Test, 2 attempts left".
+     * "Practice", "Test" or "Test, 2 attempts left" (the count only for someone who can take the test).
      *
      * @param int $userid user id
+     * @param bool $canattempt whether the user can attempt the activity
      * @return string plain text
      */
-    protected function get_mode_text(int $userid): string {
+    protected function get_mode_text(int $userid, bool $canattempt): string {
         if (!instance_settings::is_test($this->instance)) {
             return get_string('modepractice', 'mod_whakaharatau');
         }
-        $left = isloggedin() && !isguestuser() ? attempt::attempts_left($this->instance, $userid) : null;
+        $left = $canattempt ? attempt::attempts_left($this->instance, $userid) : null;
         if ($left === null) {
             return get_string('modetest', 'mod_whakaharatau');
         }

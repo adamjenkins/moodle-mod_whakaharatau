@@ -49,6 +49,7 @@
         "showstartagain": true,
         "noattemptsleft": false,
         "cannotattempt": false,
+        "cannotattempttext": "",
         "notplayable": false,
         "lastattemptid": 0,
         "editurl": ""
@@ -76,7 +77,7 @@
             {{/editurl}}
         {{/notplayable}}
         {{#cannotattempt}}
-            <p class="mod-whakaharatau-notice">{{#str}} cannotattempt, mod_whakaharatau {{/str}}</p>
+            <p class="mod-whakaharatau-notice">{{cannotattempttext}}</p>
         {{/cannotattempt}}
         <p class="mod-whakaharatau-notice" data-region="noattemptsleft"{{^noattemptsleft}} hidden{{/noattemptsleft}}>
             {{#str}} nomoreattempts, mod_whakaharatau {{/str}}
