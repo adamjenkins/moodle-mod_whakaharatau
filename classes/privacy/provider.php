@@ -53,6 +53,8 @@ class provider implements
             'round' => 'privacy:metadata:attempt:round',
             'slideorder' => 'privacy:metadata:attempt:slideorder',
             'optionorder' => 'privacy:metadata:attempt:optionorder',
+            'shuffle' => 'privacy:metadata:attempt:shuffle',
+            'repeatmode' => 'privacy:metadata:attempt:repeatmode',
             'currentslide' => 'privacy:metadata:attempt:currentslide',
             'score' => 'privacy:metadata:attempt:score',
             'maxscore' => 'privacy:metadata:attempt:maxscore',
@@ -167,11 +169,17 @@ class provider implements
                         fn($id) => $slidenumbers[(int) $id] ?? null,
                         explode(',', (string) $record->slideorder)
                     ))),
+                    'optionorder' => self::export_optionorder((string) $record->optionorder, $slidenumbers, $optionnumbers),
+                    'shuffle' => transform::yesno($record->shuffle),
+                    'repeatmode' => (int) $record->repeatmode,
+                    'currentslide' => (int) $record->currentslide,
                     'score' => $record->score === null ? null : (float) $record->score,
                     'maxscore' => $record->maxscore === null ? null : (float) $record->maxscore,
+                    'currentstreak' => (int) $record->currentstreak,
                     'beststreak' => (int) $record->beststreak,
                     'timestart' => transform::datetime($record->timestart),
                     'timefinish' => $record->timefinish ? transform::datetime($record->timefinish) : null,
+                    'timemodified' => transform::datetime($record->timemodified),
                     'responses' => $responses,
                 ];
             }
@@ -186,6 +194,30 @@ class provider implements
                 (object) ['attempts' => $exported]
             );
         }
+    }
+
+    /**
+     * The frozen option order of an attempt, as slide number => option numbers in the order shown.
+     *
+     * @param string $json stored optionorder: {slideid: [optionid, ...]}
+     * @param int[] $slidenumbers slide id => number
+     * @param int[] $optionnumbers option id => number
+     * @return array
+     */
+    private static function export_optionorder(string $json, array $slidenumbers, array $optionnumbers): array {
+        $order = json_decode($json, true);
+        $exported = [];
+        foreach (is_array($order) ? $order : [] as $slideid => $optionids) {
+            if (!isset($slidenumbers[(int) $slideid]) || !is_array($optionids)) {
+                continue;
+            }
+            $exported[$slidenumbers[(int) $slideid]] = array_values(array_filter(array_map(
+                fn($id) => $optionnumbers[(int) $id] ?? null,
+                $optionids
+            )));
+        }
+        ksort($exported);
+        return $exported;
     }
 
     /**

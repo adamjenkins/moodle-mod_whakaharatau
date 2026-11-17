@@ -110,4 +110,20 @@ final class player_test extends \advanced_testcase {
         $this->assertTrue($data['cannotattempt']);
         $this->assertSame(get_string('cannotattempt', 'mod_whakaharatau'), $data['cannotattempttext']);
     }
+
+    /**
+     * The activity name is escaped once, by the template: "&" is not shown as "&amp;".
+     *
+     * @return void
+     */
+    public function test_name_is_not_escaped_twice(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$course, $instance] = $this->setup_test();
+        $DB->set_field('whakaharatau', 'name', 'Kurī & ngeru', ['id' => $instance->id]);
+        rebuild_course_cache($course->id, true);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $this->assertSame('Kurī & ngeru', $this->export($course, $instance)['name']);
+    }
 }

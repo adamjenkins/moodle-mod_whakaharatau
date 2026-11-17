@@ -19,6 +19,7 @@ namespace mod_whakaharatau\external;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_whakaharatau\local\attempt;
 
 /**
  * Finish the user's own attempt (idempotent) and return its summary, and its review when allowed.
@@ -64,8 +65,18 @@ class finish_attempt extends player_api {
         $attempt = self::load_own_attempt($params['attemptid'], false);
         if (!$attempt->is_finished()) {
             self::require_can_attempt($attempt->get_context());
+            // The same lock as submit_answer, and a reload inside it, so an answer stored at the same moment
+            // cannot reopen the attempt after it is finished (and after its review has been shown).
+            $lock = attempt::lock($attempt->get_id());
+            try {
+                $attempt = self::load_own_attempt($params['attemptid'], false);
+                $summary = $attempt->finish();
+            } finally {
+                $lock->release();
+            }
+        } else {
+            $summary = $attempt->finish();
         }
-        $summary = $attempt->finish();
         $result = [
             'summary' => self::clean_summary($summary),
             'images' => self::images_payload($attempt, $summary),

@@ -135,12 +135,16 @@ final class exporter {
     /**
      * CSV text of rows (UTF-8, comma separated, CRLF line ends as spreadsheets expect).
      *
+     * A cell starting with = + - or @ gets a leading ' (\core\dataformat::escape_spreadsheet_formula()), so a
+     * spreadsheet shows the text instead of running it as a formula. The importer removes that ' again.
+     *
      * @param array[] $rows rows of cells
      * @return string
      */
     public static function to_csv(array $rows): string {
         $handle = fopen('php://temp', 'r+');
         foreach ($rows as $row) {
+            $row = array_map(fn($cell) => \core\dataformat::escape_spreadsheet_formula($cell), $row);
             fputcsv($handle, $row, ',', '"', '', "\r\n");
         }
         rewind($handle);

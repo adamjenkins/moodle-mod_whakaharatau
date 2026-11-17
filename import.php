@@ -60,7 +60,7 @@ $existing = slides::count_slides((int) $instance->id);
 if ($step === 'confirm') {
     require_sesskey();
     $stageid = required_param('stage', PARAM_INT);
-    if (optional_param('cancelimport', '', PARAM_RAW) !== '') {
+    if (optional_param('cancelimport', '', PARAM_TEXT) !== '') {
         importer::discard_stage($stageid);
         redirect($url);
     }

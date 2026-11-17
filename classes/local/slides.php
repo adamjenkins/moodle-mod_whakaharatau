@@ -177,10 +177,10 @@ final class slides {
         $record = (object) [
             'whakaharatauid' => $whakaharatauid,
             'sortorder' => isset($data->sortorder) ? (int) $data->sortorder : self::next_slide_sortorder($whakaharatauid),
-            'prompt' => isset($data->prompt) ? trim((string) $data->prompt) : '',
-            'promptformat' => isset($data->promptformat) ? (int) $data->promptformat : FORMAT_PLAIN,
+            'prompt' => self::clean_text($data->prompt ?? ''),
+            'promptformat' => FORMAT_PLAIN,
             'promptlang' => self::clean_lang($data->promptlang ?? null),
-            'alttext' => isset($data->alttext) ? trim((string) $data->alttext) : '',
+            'alttext' => self::clean_text($data->alttext ?? ''),
             'decorative' => empty($data->decorative) ? 0 : 1,
             'timecreated' => $now,
             'timemodified' => $now,
@@ -199,12 +199,10 @@ final class slides {
         $slide = self::get_slide((int) $data->id);
         foreach (['alttext', 'prompt'] as $field) {
             if (property_exists($data, $field)) {
-                $slide->$field = trim((string) $data->$field);
+                $slide->$field = self::clean_text($data->$field);
             }
         }
-        if (property_exists($data, 'promptformat')) {
-            $slide->promptformat = (int) $data->promptformat;
-        }
+        $slide->promptformat = FORMAT_PLAIN;
         if (property_exists($data, 'promptlang')) {
             $slide->promptlang = self::clean_lang($data->promptlang);
         }
@@ -377,7 +375,7 @@ final class slides {
         $record = (object) [
             'slideid' => $slideid,
             'sortorder' => isset($data->sortorder) ? (int) $data->sortorder : self::next_option_sortorder($slideid),
-            'transcript' => isset($data->transcript) ? trim((string) $data->transcript) : '',
+            'transcript' => self::clean_text($data->transcript ?? ''),
             'iscorrect' => empty($data->iscorrect) ? 0 : 1,
             'timecreated' => $now,
             'timemodified' => $now,
@@ -395,7 +393,7 @@ final class slides {
         global $DB;
         $option = self::get_option((int) $data->id);
         if (property_exists($data, 'transcript')) {
-            $option->transcript = trim((string) $data->transcript);
+            $option->transcript = self::clean_text($data->transcript);
         }
         if (property_exists($data, 'iscorrect')) {
             $option->iscorrect = empty($data->iscorrect) ? 0 : 1;
@@ -840,6 +838,44 @@ final class slides {
         $head = (string) fread($handle, 16);
         fclose($handle);
         return $head;
+    }
+
+    /**
+     * Clean a plain-text field (alt text, prompt, transcript): no HTML, trimmed. Every way in uses it: the slide
+     * form, the importer and restore (where a crafted backup is input like any other).
+     *
+     * @param mixed $value raw value
+     * @return string
+     */
+    public static function clean_text($value): string {
+        return trim(clean_param((string) $value, PARAM_TEXT));
+    }
+
+    /**
+     * Clean a slide row from a backup in place, as create_slide() cleans form and import data.
+     *
+     * @param stdClass $data slide fields
+     * @return void
+     */
+    public static function clean_slide_fields(stdClass $data): void {
+        $data->alttext = self::clean_text($data->alttext ?? '');
+        $data->prompt = self::clean_text($data->prompt ?? '');
+        $data->promptformat = FORMAT_PLAIN;
+        $data->promptlang = self::clean_lang($data->promptlang ?? null);
+        $data->decorative = empty($data->decorative) ? 0 : 1;
+        $data->sortorder = (int) ($data->sortorder ?? 0);
+    }
+
+    /**
+     * Clean an option row from a backup in place, as create_option() cleans form and import data.
+     *
+     * @param stdClass $data option fields
+     * @return void
+     */
+    public static function clean_option_fields(stdClass $data): void {
+        $data->transcript = self::clean_text($data->transcript ?? '');
+        $data->iscorrect = empty($data->iscorrect) ? 0 : 1;
+        $data->sortorder = (int) ($data->sortorder ?? 0);
     }
 
     /**

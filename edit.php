@@ -90,8 +90,14 @@ if ($action === 'delete' && $slide) {
 
 if ($action === 'edit') {
     $langs = [];
-    if ($slide && !empty($slide->promptlang) && !isset(slide_form::PROMPT_LANGS[$slide->promptlang])) {
-        $langs[$slide->promptlang] = $slide->promptlang;
+    // A stored code not in the list (from an import) is offered as itself. Formslib prints option labels as HTML,
+    // so only a code that is clean is offered, escaped.
+    $storedlang = $slide ? (string) $slide->promptlang : '';
+    if (
+        $storedlang !== '' && !isset(slide_form::PROMPT_LANGS[$storedlang])
+            && clean_param($storedlang, PARAM_ALPHANUMEXT) === $storedlang
+    ) {
+        $langs[$storedlang] = s($storedlang);
     }
     $optioncount = $slide ? max(slides::MIN_OPTIONS, count(slides::get_options((int) $slide->id))) : 4;
     $formurl = new moodle_url($listurl, ['action' => 'edit']);

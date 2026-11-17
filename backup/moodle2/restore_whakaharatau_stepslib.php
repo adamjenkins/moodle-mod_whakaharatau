@@ -63,8 +63,12 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
      * @return void
      */
     protected function process_whakaharatau($data) {
-        global $DB;
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/whakaharatau/lib.php');
         $data = (object) $data;
+        // A backup file is input: clamp the settings as the activity form does. The backed-up row is passed as the
+        // current record too, so values the form would keep (such as a Practice activity's maximum grade) are kept.
+        whakaharatau_normalise_instance_data($data, clone $data);
         $data->course = $this->get_courseid();
         $data->timecreated = $data->timecreated ?? time();
         $data->timemodified = time();
@@ -83,6 +87,7 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         $data = (object) $data;
         $oldid = $data->id;
         $data->whakaharatauid = $this->get_new_parentid('whakaharatau');
+        \mod_whakaharatau\local\slides::clean_slide_fields($data);
         $newid = $DB->insert_record('whakaharatau_slide', $data);
         $this->set_mapping('whakaharatau_slide', $oldid, $newid, true);
     }
@@ -98,6 +103,7 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         $data = (object) $data;
         $oldid = $data->id;
         $data->slideid = $this->get_new_parentid('whakaharatau_slide');
+        \mod_whakaharatau\local\slides::clean_option_fields($data);
         $newid = $DB->insert_record('whakaharatau_option', $data);
         $this->set_mapping('whakaharatau_option', $oldid, $newid, true);
     }

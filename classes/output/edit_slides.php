@@ -117,7 +117,10 @@ class edit_slides implements \renderable, \templatable {
             'oneproblem' => count($problems) === 1,
             'addurl' => (new moodle_url('/mod/whakaharatau/edit.php', ['id' => $this->cmid, 'action' => 'edit']))->out(false),
             'importurl' => (new moodle_url('/mod/whakaharatau/import.php', ['id' => $this->cmid]))->out(false),
-            'exporturl' => (new moodle_url('/mod/whakaharatau/export.php', ['id' => $this->cmid]))->out(false),
+            'exporturl' => (new moodle_url(
+                '/mod/whakaharatau/export.php',
+                ['id' => $this->cmid, 'sesskey' => sesskey()]
+            ))->out(false),
             'viewurl' => (new moodle_url('/mod/whakaharatau/view.php', ['id' => $this->cmid]))->out(false),
         ];
     }

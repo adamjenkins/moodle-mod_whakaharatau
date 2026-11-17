@@ -20,6 +20,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_whakaharatau\local\attempt;
 
 /**
  * Choose an option on the current slide. The server marks it; this is the only place an answer is marked.
@@ -60,11 +61,7 @@ class submit_answer extends player_api {
 
         // Two answers sent at once must not both pass the "already chosen" and tries checks: hold a lock on the
         // attempt and reload it inside the lock, so the checks see any answer stored by the other request.
-        $lock = \core\lock\lock_config::get_lock_factory('mod_whakaharatau')
-            ->get_lock('attempt' . $attempt->get_id(), 5);
-        if (!$lock) {
-            throw new \moodle_exception('locktimeout');
-        }
+        $lock = attempt::lock($attempt->get_id());
         try {
             $attempt = self::load_own_attempt($params['attemptid'], true);
             $result = $attempt->submit_answer((int) $params['slideid'], (int) $params['optionid']);

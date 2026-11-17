@@ -267,4 +267,37 @@ final class backup_restore_test extends \advanced_testcase {
             $finished->get_summary()['firsttrycorrect']
         );
     }
+
+    /**
+     * A backup is input: hostile slide and option fields are cleaned on restore as the forms clean them, and the
+     * instance settings are clamped.
+     *
+     * @return void
+     */
+    public function test_restore_cleans_hostile_fields(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $this->setup_data();
+        // What a crafted backup could carry, written straight into the source rows.
+        $first = $this->slides[0];
+        $DB->update_record('whakaharatau_slide', (object) ['id' => $first->id, 'alttext' => '<b>A dog</b>',
+            'prompt' => '<a href="javascript:alert(1)">Listen</a>', 'promptformat' => FORMAT_HTML,
+            'promptlang' => '<img src=x onerror=1>', 'decorative' => 7]);
+        $DB->set_field('whakaharatau_option', 'transcript', '<i>kurī</i>', ['id' => $first->options[0]->id]);
+        $DB->set_field('whakaharatau_option', 'iscorrect', 5, ['id' => $first->options[2]->id]);
+        $DB->set_field('whakaharatau', 'grade', -40, ['id' => $this->instance->id]);
+
+        $restored = $this->backup_and_restore(false);
+        [$slidemap, $optionmap] = $this->id_maps($restored);
+        $slide = slides::get_slide($slidemap[(int) $first->id]);
+        $this->assertSame('A dog', $slide->alttext);
+        $this->assertSame('Listen', $slide->prompt);
+        $this->assertSame((int) FORMAT_PLAIN, (int) $slide->promptformat);
+        $this->assertSame('imgsrcxonerror1', $slide->promptlang);
+        $this->assertSame(1, (int) $slide->decorative);
+        $this->assertSame('kurī', slides::get_option($optionmap[(int) $first->options[0]->id])->transcript);
+        $this->assertSame(1, (int) slides::get_option($optionmap[(int) $first->options[2]->id])->iscorrect);
+        $this->assertSame(0, (int) $restored->grade);
+    }
 }

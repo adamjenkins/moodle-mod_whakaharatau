@@ -237,7 +237,14 @@ class attempt {
             if (!$forcenew && !$missedfrom && (int) $existing->record->mode === (int) $instance->mode) {
                 return $existing;
             }
-            $existing->finish();
+            // Finish it under the attempt's lock, so an answer being stored for it at the same moment cannot
+            // write the old "in progress" state back over the finished one.
+            $lock = self::lock($existing->get_id());
+            try {
+                self::get_by_id($existing->get_id())->finish();
+            } finally {
+                $lock->release();
+            }
         }
         if (!self::can_start_new($instance, $userid)) {
             throw new moodle_exception('nomoreattempts', 'mod_whakaharatau');
@@ -391,6 +398,33 @@ class attempt {
      */
     public function is_finished(): bool {
         return $this->record->state === self::STATE_FINISHED;
+    }
+
+    /**
+     * Take the lock that every write to one attempt holds (answering, finishing), so two requests for the same
+     * attempt run one after the other. Reload the attempt after taking it: the other request may have changed it.
+     *
+     * @param int $attemptid attempt id
+     * @return \core\lock\lock release it in a finally block
+     * @throws moodle_exception locktimeout
+     */
+    public static function lock(int $attemptid): \core\lock\lock {
+        $lock = \core\lock\lock_config::get_lock_factory('mod_whakaharatau')->get_lock('attempt' . $attemptid, 5);
+        if (!$lock) {
+            throw new moodle_exception('locktimeout');
+        }
+        return $lock;
+    }
+
+    /**
+     * Whether the stored attempt is finished, read from the database rather than this object's copy: a copy loaded
+     * before another request finished the attempt still says "in progress".
+     *
+     * @return bool
+     */
+    protected function is_finished_in_db(): bool {
+        global $DB;
+        return $DB->get_field('whakaharatau_attempt', 'state', ['id' => $this->get_id()]) === self::STATE_FINISHED;
     }
 
     /**
@@ -744,7 +778,7 @@ class attempt {
      */
     public function submit_answer(int $slideid, int $optionid): array {
         global $DB;
-        if ($this->is_finished()) {
+        if ($this->is_finished() || $this->is_finished_in_db()) {
             throw new moodle_exception('attemptfinished', 'mod_whakaharatau');
         }
         $order = $this->get_slideorder();
@@ -862,6 +896,11 @@ class attempt {
      */
     public function finish(): array {
         global $CFG, $DB;
+        if (!$this->is_finished() && $this->is_finished_in_db()) {
+            // Another request finished it after this copy was loaded: use the stored result, do not score it again.
+            $this->record = $DB->get_record('whakaharatau_attempt', ['id' => $this->get_id()], '*', MUST_EXIST);
+            $this->responses = null;
+        }
         if ($this->is_finished()) {
             return $this->get_summary();
         }

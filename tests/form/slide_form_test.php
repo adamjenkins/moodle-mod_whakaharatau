@@ -114,7 +114,9 @@ final class slide_form_test extends \advanced_testcase {
         $output = $PAGE->get_renderer('core');
         $list = new \mod_whakaharatau\output\edit_slides($instance, (int) $instance->cmid, $context);
         $html = $output->render_from_template('mod_whakaharatau/edit_slides', $list->export_for_template($output));
-        $this->assertStringContainsString('&lt;b&gt;Kai&lt;/b&gt; &amp; co', $html);
+        // Tags are stripped when the alt text is saved; what is left is escaped on output.
+        $this->assertStringContainsString('Kai &amp; co', $html);
+        $this->assertStringNotContainsString('<b>Kai', $html);
         $this->assertStringContainsString(get_string('problem_nocorrect', 'mod_whakaharatau'), $html);
         $this->assertStringNotContainsString('[[', $html);
 

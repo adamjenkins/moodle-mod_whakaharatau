@@ -37,6 +37,8 @@ $instance = $DB->get_record('whakaharatau', ['id' => $cm->instance], '*', MUST_E
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/whakaharatau:manage', $context);
+// Building the ZIP is work: only from this site's own Export link, not from a link on another site.
+require_sesskey();
 
 $PAGE->set_url('/mod/whakaharatau/export.php', ['id' => $cm->id]);
 $PAGE->set_context($context);

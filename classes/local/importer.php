@@ -137,15 +137,27 @@ final class importer {
             $state->rejected[] = ['name' => $zip->get_filename(), 'reason' => 'importbadzip'];
             return;
         }
-        // Check the claimed sizes before extracting anything (zip bombs).
+        // Check the claimed sizes before extracting anything (zip bombs). A file over the per-file upload limit
+        // would be rejected after extraction anyway; refuse the ZIP before writing any of it.
         $files = 0;
         $bytes = 0;
+        $toobig = [];
         foreach ($list as $info) {
             if (!empty($info->is_directory)) {
                 continue;
             }
             $files++;
             $bytes += (int) $info->size;
+            if ($state->maxbytes > 0 && (int) $info->size > $state->maxbytes) {
+                $toobig[] = (string) $info->pathname;
+            }
+        }
+        if ($toobig) {
+            foreach ($toobig as $name) {
+                $state->rejected[] = ['name' => clean_param($name, PARAM_PATH), 'reason' => 'importfiletoolarge'];
+            }
+            $state->rejected[] = ['name' => $zip->get_filename(), 'reason' => 'importzipbigfile'];
+            return;
         }
         if ($state->count + $files > self::MAX_FILES) {
             $state->rejected[] = ['name' => $zip->get_filename(), 'reason' => 'importtoomanyfiles'];
@@ -374,7 +386,11 @@ final class importer {
      */
     public static function parse_manifest(string $csv, array $paths, string $basedir = ''): array {
         $plan = ['source' => self::SOURCE_MANIFEST, 'slides' => [], 'unmatched' => [], 'warnings' => []];
-        $rows = self::read_csv($csv);
+        // Undo the exporter's formula guard: a cell written as '=... (or '+, '-, '@) is read as =....
+        $rows = array_map(
+            fn($row) => array_map(fn($cell) => preg_replace("/^(\\s*)'(?=\\s*[=+\\-@])/", '$1', (string) $cell), $row),
+            self::read_csv($csv)
+        );
         if (!$rows) {
             $plan['warnings'][] = ['key' => 'importwarn_emptymanifest', 'a' => null];
             $plan['unmatched'] = array_keys($paths);

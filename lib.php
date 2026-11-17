@@ -571,7 +571,7 @@ function whakaharatau_extend_settings_navigation(settings_navigation $settings, 
         );
         $node->add(
             get_string('exportslides', 'mod_whakaharatau'),
-            new moodle_url('/mod/whakaharatau/export.php', ['id' => $cm->id]),
+            new moodle_url('/mod/whakaharatau/export.php', ['id' => $cm->id, 'sesskey' => sesskey()]),
             navigation_node::TYPE_SETTING,
             null,
             'mod_whakaharatau_export'

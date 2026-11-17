@@ -45,7 +45,7 @@ class behat_mod_whakaharatau extends behat_base {
     /**
      * Resolve a page of an activity for "I am on the "<activity>" "mod_whakaharatau > <page>" page".
      *
-     * Pages: View, Edit slides, Import, Export, Report.
+     * Pages: View, Edit slides, Import, Report.
      *
      * @param string $type page type
      * @param string $identifier activity idnumber or name
@@ -60,8 +60,6 @@ class behat_mod_whakaharatau extends behat_base {
                 return new moodle_url('/mod/whakaharatau/edit.php', ['id' => $cm->id]);
             case 'import':
                 return new moodle_url('/mod/whakaharatau/import.php', ['id' => $cm->id]);
-            case 'export':
-                return new moodle_url('/mod/whakaharatau/export.php', ['id' => $cm->id]);
             case 'report':
                 return new moodle_url('/mod/whakaharatau/report.php', ['id' => $cm->id]);
         }

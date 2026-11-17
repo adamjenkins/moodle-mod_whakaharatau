@@ -75,12 +75,15 @@ class player implements renderable, templatable {
         $canmanage = has_capability('mod/whakaharatau:manage', $context);
         $canattempt = !isguestuser() && isloggedin()
             && has_any_capability(['mod/whakaharatau:attempt', 'mod/whakaharatau:manage'], $context);
-        $playable = slides::is_playable($instance, $context);
-        $slidecount = slides::count_slides((int) $instance->id);
+        // This runs for every inline instance on each course page view: read each thing once.
+        $slidelist = slides::get_slides((int) $instance->id);
+        $slidecount = count($slidelist);
+        $playable = $slidecount > 0 && !slides::get_problems($context, (int) $instance->id);
 
         $inprogress = null;
         $latest = null;
         $canstartnew = false;
+        $attemptsleft = null;
         if ($canattempt) {
             $inprogress = attempt::get_inprogress($instance, $cm, $userid);
             if ($inprogress && (int) $inprogress->get_record()->mode !== (int) $instance->mode) {
@@ -88,7 +91,8 @@ class player implements renderable, templatable {
                 $inprogress = null;
             }
             $latest = attempt::get_latest_finished($instance, $cm, $userid, (int) $instance->mode);
-            $canstartnew = attempt::can_start_new($instance, $userid);
+            $attemptsleft = attempt::attempts_left($instance, $userid);
+            $canstartnew = $attemptsleft === null || $attemptsleft > 0;
         }
         $hasinprogress = $inprogress !== null;
 
@@ -106,16 +110,17 @@ class player implements renderable, templatable {
             'idprefix' => 'mod-whakaharatau-' . (int) $cm->id,
             'inline' => $this->inline,
             'inlineflag' => $this->inline ? 1 : 0,
-            'name' => format_string($instance->name, true, ['context' => $context]),
+            // Unescaped here: the template's {{name}} escapes it (escaping twice showed "&amp;").
+            'name' => format_string($instance->name, true, ['context' => $context, 'escape' => false]),
             'introhtml' => '',
-            'cover' => $this->get_cover_url($context),
+            'cover' => $this->get_cover_url($context, $slidelist),
             'factstext' => get_string('startfacts', 'mod_whakaharatau', (object) [
                 'slides' => get_string(
                     $slidecount === 1 ? 'startslidecountone' : 'startslidecount',
                     'mod_whakaharatau',
                     $slidecount
                 ),
-                'mode' => $this->get_mode_text($userid, $canattempt),
+                'mode' => $this->get_mode_text($attemptsleft),
             ]),
             'playmodetext' => instance_settings::get_playmode_description($instance),
             'previoustext' => $canattempt ? $this->get_previous_text($userid) : '',
@@ -129,7 +134,7 @@ class player implements renderable, templatable {
             'canattempt' => $canattempt,
             'hasinprogress' => $hasinprogress ? 1 : 0,
             'canstartnew' => $canstartnew ? 1 : 0,
-            'attemptsleft' => $canattempt ? (attempt::attempts_left($instance, $userid) ?? -1) : -1,
+            'attemptsleft' => $attemptsleft ?? -1,
             'showstart' => $canattempt && $playable && !$hasinprogress && $canstartnew,
             'showcontinue' => $canattempt && $playable && $hasinprogress,
             'showstartagain' => $canattempt && $playable && $hasinprogress && $canstartnew,
@@ -150,15 +155,13 @@ class player implements renderable, templatable {
      * URL of the start screen's image: the cover image, else the first slide's image.
      *
      * @param context_module $context module context
+     * @param stdClass[] $slidelist the instance's slides in order (slides::get_slides())
      * @return string empty when there is none
      */
-    protected function get_cover_url(context_module $context): string {
+    protected function get_cover_url(context_module $context, array $slidelist): string {
         $url = slides::get_file_url($context, slides::AREA_COVER, 0);
-        if (!$url) {
-            $first = slides::get_slides((int) $this->instance->id);
-            if ($first) {
-                $url = slides::get_file_url($context, slides::AREA_IMAGE, (int) reset($first)->id);
-            }
+        if (!$url && $slidelist) {
+            $url = slides::get_file_url($context, slides::AREA_IMAGE, (int) reset($slidelist)->id);
         }
         return $url ? $url->out(false) : '';
     }
@@ -166,15 +169,14 @@ class player implements renderable, templatable {
     /**
      * "Practice", "Test" or "Test, 2 attempts left" (the count only for someone who can take the test).
      *
-     * @param int $userid user id
-     * @param bool $canattempt whether the user can attempt the activity
+     * @param int|null $left Test attempts the user has left (attempt::attempts_left()); null when unlimited or
+     *      the user cannot attempt
      * @return string plain text
      */
-    protected function get_mode_text(int $userid, bool $canattempt): string {
+    protected function get_mode_text(?int $left): string {
         if (!instance_settings::is_test($this->instance)) {
             return get_string('modepractice', 'mod_whakaharatau');
         }
-        $left = $canattempt ? attempt::attempts_left($this->instance, $userid) : null;
         if ($left === null) {
             return get_string('modetest', 'mod_whakaharatau');
         }

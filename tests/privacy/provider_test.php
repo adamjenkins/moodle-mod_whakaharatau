@@ -226,4 +226,32 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertSame(1, $this->count_attempts($this->one, $this->alice));
         $this->assertSame(1, $this->count_attempts($this->two, $this->alice));
     }
+
+    /**
+     * Every attempt field declared in get_metadata() is in the export, by number and never by id.
+     *
+     * @return void
+     */
+    public function test_export_has_every_declared_attempt_field(): void {
+        $this->resetAfterTest();
+        $this->setup_data();
+        $context = \context_module::instance($this->one->cmid);
+        $this->export_context_data_for_user((int) $this->alice->id, $context, 'mod_whakaharatau');
+        $data = writer::with_context($context)->get_data([get_string('privacy:attempts', 'mod_whakaharatau')]);
+        $attempt = $data->attempts[0];
+        foreach (
+            ['attempt', 'mode', 'state', 'round', 'slideorder', 'optionorder', 'shuffle', 'repeatmode', 'currentslide',
+                'score', 'maxscore', 'currentstreak', 'beststreak', 'timestart', 'timefinish', 'timemodified'] as $field
+        ) {
+            $this->assertTrue(property_exists($attempt, $field), $field);
+        }
+        // Option order: slide number => option numbers, each a permutation of that slide's options.
+        $this->assertNotEmpty($attempt->optionorder);
+        foreach ($attempt->optionorder as $slidenumber => $optionnumbers) {
+            $this->assertContains($slidenumber, [1, 2]);
+            $sorted = $optionnumbers;
+            sort($sorted);
+            $this->assertSame(range(1, count($optionnumbers)), $sorted);
+        }
+    }
 }

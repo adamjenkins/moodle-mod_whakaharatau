@@ -38,6 +38,7 @@ use PHPUnit\Framework\Attributes\CoversFunction;
 #[CoversFunction('whakaharatau_update_grades')]
 #[CoversFunction('whakaharatau_get_coursemodule_info')]
 #[CoversFunction('whakaharatau_cm_info_view')]
+#[CoversFunction('whakaharatau_pluginfile')]
 #[CoversFunction('whakaharatau_reset_userdata')]
 #[CoversFunction('whakaharatau_get_completion_active_rule_descriptions')]
 #[CoversFunction('whakaharatau_extend_settings_navigation')]
@@ -325,5 +326,38 @@ final class lib_test extends \advanced_testcase {
         ) {
             $this->assertNotFalse($node->get($key), $key);
         }
+    }
+
+    /**
+     * The file callback serves only the plugin's own file areas.
+     *
+     * @return void
+     */
+    public function test_pluginfile_refuses_unknown_areas(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/whakaharatau/lib.php');
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['summary' => '']);
+        $instance = $this->getDataGenerator()->create_module('whakaharatau', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('whakaharatau', $instance->cmid, 0, false, MUST_EXIST);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+        foreach (['intro', 'backup', 'secret', ''] as $area) {
+            $this->assertFalse(whakaharatau_pluginfile(
+                $course,
+                $cm,
+                \context_module::instance($cm->id),
+                $area,
+                [0, 'x.png'],
+                false
+            ), $area);
+        }
+        $this->assertFalse(whakaharatau_pluginfile(
+            $course,
+            $cm,
+            \context_course::instance($course->id),
+            'slideimage',
+            [0, 'x.png'],
+            false
+        ));
     }
 }
