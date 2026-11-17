@@ -24,8 +24,8 @@ use mod_whakaharatau\local\slides;
  * @package    mod_whakaharatau
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \mod_whakaharatau\external\move_slide
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\move_slide::class)]
 final class move_slide_test extends \advanced_testcase {
     /**
      * A teacher moves a slide; a student may not; a slide of another activity is refused.

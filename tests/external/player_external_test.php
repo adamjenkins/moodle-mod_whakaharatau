@@ -27,12 +27,12 @@ use mod_whakaharatau\local\instance_settings;
  * @category   external
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \mod_whakaharatau\external\start_attempt
- * @covers     \mod_whakaharatau\external\get_attempt_state
- * @covers     \mod_whakaharatau\external\submit_answer
- * @covers     \mod_whakaharatau\external\finish_attempt
- * @covers     \mod_whakaharatau\external\player_api
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\start_attempt::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\get_attempt_state::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\submit_answer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\finish_attempt::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\external\player_api::class)]
 final class player_external_test extends \core_external\tests\externallib_testcase {
     /**
      * A course, an activity with two 3-option slides (correct: option index 1), a student and a teacher.

@@ -25,9 +25,9 @@ use context_user;
  * @package    mod_whakaharatau
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \mod_whakaharatau\local\importer
- * @covers     \mod_whakaharatau\local\exporter
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\local\importer::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\local\exporter::class)]
 final class importer_test extends \advanced_testcase {
     /** @var string Bytes that pass the MP3 content check. */
     const MP3 = "ID3\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 test audio";

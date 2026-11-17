@@ -26,10 +26,10 @@ use mod_whakaharatau\local\slides;
  * @package    mod_whakaharatau
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \mod_whakaharatau\form\slide_form
- * @covers     \mod_whakaharatau\output\edit_slides
- * @covers     \mod_whakaharatau\output\import_review
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\form\slide_form::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\output\edit_slides::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_whakaharatau\output\import_review::class)]
 final class slide_form_test extends \advanced_testcase {
     /** @var string Bytes that pass the MP3 content check. */
     const MP3 = "ID3\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 test audio";
