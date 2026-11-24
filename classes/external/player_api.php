@@ -204,6 +204,8 @@ abstract class player_api extends external_api {
             'imageurl' => new external_value(PARAM_URL, 'Image URL', VALUE_REQUIRED, null, NULL_ALLOWED),
             'alttext' => new external_value(PARAM_RAW, 'Alternative text (plain text, empty when decorative)'),
             'decorative' => new external_value(PARAM_BOOL, 'Whether the image is decorative'),
+            'fadeside' => new external_value(PARAM_INT, 'Side fade, percent of the picture (0 = none)'),
+            'fadebottom' => new external_value(PARAM_INT, 'Bottom fade when stacked, percent (0 = none)'),
             'prompthtml' => new external_value(PARAM_RAW, 'Formatted prompt, empty when none'),
             'promptlang' => new external_value(
                 PARAM_RAW,

@@ -64,6 +64,10 @@ $string['correctrequired'] = 'Choose the correct option. It must have an audio f
 $string['correctwas'] = 'The correct answer was option {$a}.';
 $string['cover'] = 'Cover image';
 $string['cover_help'] = 'An optional image for the start screen. Without one, the first slide\'s image is used. JPEG, PNG, GIF or WebP.';
+$string['coverfade'] = 'Fade the cover image';
+$string['coverfade_help'] = 'Whether the cover image on the start screen fades into the panel beside it. Without a cover image, the start screen shows the first slide\'s picture with that slide\'s own fade.';
+$string['coverfadewidth'] = 'Cover fade (%)';
+$string['coverfadewidth_help'] = 'How much of the cover image\'s width fades, from 0 to 50 per cent.';
 $string['decorative'] = 'Decorative';
 $string['decorative_help'] = 'Tick this only if the picture adds nothing a screen-reader user needs, for example when the prompt already says what to listen for. A decorative picture is hidden from screen readers.';
 $string['decorative_label'] = 'The picture is decorative';
@@ -83,6 +87,7 @@ $string['displayinlineyes'] = 'Yes, inline on the course page';
 $string['displaylink'] = 'No, link only';
 $string['editslide'] = 'Edit slide {$a}';
 $string['editslides'] = 'Edit slides';
+$string['errorfadewidth'] = 'Enter a whole number from 0 to {$a}.';
 $string['errornotyourattempt'] = 'This attempt belongs to someone else.';
 $string['errorpracticegradecompletion'] = 'Practice mode gives no grade, so this condition can never be met. Choose Test mode or clear this condition.';
 $string['errorscalenotsupported'] = 'This activity is scored in points. Choose the grade type "Point".';
@@ -96,6 +101,10 @@ $string['exit'] = 'Exit';
 $string['exportfailed'] = 'The export file could not be created.';
 $string['exportnothing'] = 'There are no slides to export.';
 $string['exportslides'] = 'Export slides';
+$string['fade'] = 'Fade pictures on new slides';
+$string['fade_help'] = 'Whether the pictures of new slides fade into the panel beside them. This is only the starting value: each slide has its own setting. Changing it here does not change existing slides.';
+$string['fadewidth'] = 'Fade (%)';
+$string['fadewidth_help'] = 'How much of the picture\'s width fades, from 0 to 50 per cent. 0 means no fade.';
 $string['feedbackeach'] = 'After each answer';
 $string['feedbackend'] = 'Only at the end';
 $string['feedbackmode'] = 'Feedback';
@@ -141,7 +150,7 @@ $string['importintro'] = 'Build slides by uploading pictures and audio files. No
 
 Slides are made in the order of the picture names. If no clip is marked correct, you can choose it on the next page.
 
-**Using a manifest.** For exact control, put a <code>slides.csv</code> file in the ZIP. Its first row names the columns: <code>image</code>, <code>alt</code>, <code>decorative</code>, <code>prompt</code>, <code>promptlang</code>, <code>promptaudio</code>, <code>correct</code>, <code>audio1</code> to <code>audio6</code> and <code>transcript1</code> to <code>transcript6</code>. <code>correct</code> is the number of the correct audio column. File paths are relative to <code>slides.csv</code>. The Export slides page produces this format.
+**Using a manifest.** For exact control, put a <code>slides.csv</code> file in the ZIP. Its first row names the columns: <code>image</code>, <code>alt</code>, <code>decorative</code>, <code>prompt</code>, <code>promptlang</code>, <code>promptaudio</code>, <code>correct</code>, <code>fade</code>, <code>fadewidth</code>, <code>audio1</code> to <code>audio6</code> and <code>transcript1</code> to <code>transcript6</code>. <code>correct</code> is the number of the correct audio column. <code>fade</code> is 1 or 0 and <code>fadewidth</code> is 0 to 50; leave them empty for the activity\'s defaults. File paths are relative to <code>slides.csv</code>. The Export slides page produces this format.
 
 Limits: at most {$a->maxfiles} files and {$a->maxslides} slides per import, {$a->maxoptions} clips per slide. Files are checked by their content, not their name.';
 $string['importmode'] = 'Existing slides';
@@ -345,7 +354,11 @@ $string['showprogress'] = 'Show progress bar';
 $string['showprogress_help'] = 'If enabled, learners see how far through the slides they are, for example "Slide 7 of 20".';
 $string['shuffle'] = 'Shuffle';
 $string['shuffle_help'] = 'If enabled, the slides are played in a new random order on each pass. Otherwise they are played in the order set on the Edit slides page. Learners cannot change this.';
+$string['siteheading'] = 'Appearance across the site';
 $string['slidedeleted'] = 'The slide was deleted.';
+$string['slidefade'] = 'Fade';
+$string['slidefade_help'] = 'The picture fades into the panel beside it, or below it on a narrow screen. Turn it off when learners need to see the whole picture clearly.';
+$string['slidefade_label'] = 'Fade the picture into the panel';
 $string['slideimage'] = 'Picture';
 $string['slideimage_help'] = 'The picture learners match the audio to: JPEG, PNG, GIF or WebP.';
 $string['slidelabel'] = 'Slide {$a->number} of {$a->count}';
@@ -362,6 +375,8 @@ $string['slidescorefirsttry'] = 'First try only';
 $string['slidescorepartial'] = 'Partial credit for each wrong try';
 $string['slidesneedfixing'] = 'Learners cannot start this activity yet: {$a} slides need fixing (see below).';
 $string['slidesneedfixingone'] = 'Learners cannot start this activity yet: 1 slide needs fixing (see below).';
+$string['stackedfade'] = 'Bottom fade on narrow screens';
+$string['stackedfade_help'] = 'On phones and in narrow columns the picture is above the clips and its bottom edge fades by this much. It applies to every picture whose fade is on, in every activity.';
 $string['start'] = 'Start';
 $string['startagain'] = 'Start again';
 $string['startbestscore'] = 'Best score so far: {$a}%';

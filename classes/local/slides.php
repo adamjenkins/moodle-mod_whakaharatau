@@ -168,12 +168,20 @@ final class slides {
      * Create a slide at the end of the activity (or at $data->sortorder).
      *
      * @param int $whakaharatauid instance id
-     * @param stdClass $data fields: alttext, decorative, prompt, promptformat, promptlang, sortorder (all optional)
+     * @param stdClass $data fields: alttext, decorative, prompt, promptformat, promptlang, sortorder, fade, fadewidth
+     *      (all optional; a missing fade or fadewidth takes the activity's default for new slides)
      * @return int new slide id
      */
     public static function create_slide(int $whakaharatauid, stdClass $data): int {
         global $DB;
         $now = time();
+        $fade = $data->fade ?? null;
+        $fadewidth = $data->fadewidth ?? null;
+        if ($fade === null || $fadewidth === null) {
+            $instance = $DB->get_record('whakaharatau', ['id' => $whakaharatauid], 'fade, fadewidth', MUST_EXIST);
+            $fade = $fade ?? $instance->fade;
+            $fadewidth = $fadewidth ?? $instance->fadewidth;
+        }
         $record = (object) [
             'whakaharatauid' => $whakaharatauid,
             'sortorder' => isset($data->sortorder) ? (int) $data->sortorder : self::next_slide_sortorder($whakaharatauid),
@@ -182,6 +190,8 @@ final class slides {
             'promptlang' => self::clean_lang($data->promptlang ?? null),
             'alttext' => self::clean_text($data->alttext ?? ''),
             'decorative' => empty($data->decorative) ? 0 : 1,
+            'fade' => empty($fade) ? 0 : 1,
+            'fadewidth' => instance_settings::clamp_fade($fadewidth),
             'timecreated' => $now,
             'timemodified' => $now,
         ];
@@ -208,6 +218,12 @@ final class slides {
         }
         if (property_exists($data, 'decorative')) {
             $slide->decorative = empty($data->decorative) ? 0 : 1;
+        }
+        if (isset($data->fade)) {
+            $slide->fade = empty($data->fade) ? 0 : 1;
+        }
+        if (isset($data->fadewidth)) {
+            $slide->fadewidth = instance_settings::clamp_fade($data->fadewidth);
         }
         if (property_exists($data, 'sortorder')) {
             $slide->sortorder = (int) $data->sortorder;
@@ -863,6 +879,9 @@ final class slides {
         $data->promptformat = FORMAT_PLAIN;
         $data->promptlang = self::clean_lang($data->promptlang ?? null);
         $data->decorative = empty($data->decorative) ? 0 : 1;
+        // A backup from before the fade settings: the fade every picture had then.
+        $data->fade = empty($data->fade ?? 1) ? 0 : 1;
+        $data->fadewidth = instance_settings::clamp_fade($data->fadewidth ?? instance_settings::FADE_WIDTH);
         $data->sortorder = (int) ($data->sortorder ?? 0);
     }
 

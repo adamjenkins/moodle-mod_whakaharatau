@@ -77,12 +77,17 @@ function whakaharatau_normalise_instance_data(stdClass $data, ?stdClass $current
     // stored value, else the site default. (Elements hidden by hideIf are still posted.)
     foreach (
         ['shuffle', 'repeatmode', 'optionorder', 'showprogress', 'displayinline', 'feedbackmode', 'slidescore',
-            'attempts', 'grademethod', 'allowreview', 'scoring', 'autoplay', 'transcriptsbefore'] as $field
+            'attempts', 'grademethod', 'allowreview', 'scoring', 'autoplay', 'transcriptsbefore',
+            'fade', 'fadewidth', 'coverfade', 'coverfadewidth'] as $field
     ) {
         if (!isset($data->$field)) {
             $data->$field = $current->$field ?? $defaults[$field];
         }
         $data->$field = (int) $data->$field;
+    }
+    foreach (['fade', 'coverfade'] as $field) {
+        $data->$field = $data->$field ? 1 : 0;
+        $data->{$field . 'width'} = instance_settings::clamp_fade($data->{$field . 'width'});
     }
     // In Practice mode the form hides (and so disables) the grade element, which then exports 0:
     // keep the stored maximum grade so switching back to Test restores it.

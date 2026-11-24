@@ -104,6 +104,7 @@ class player implements renderable, templatable {
             $cannotattempttext = get_string($outsider ? 'cannotattempt' : 'cannotattemptrole', 'mod_whakaharatau');
         }
 
+        [$coverurl, $coverfade] = $this->get_cover($context, $slidelist);
         $courseurl = new moodle_url('/course/view.php', ['id' => $cm->course], 'module-' . $cm->id);
         $data = [
             'cmid' => (int) $cm->id,
@@ -113,7 +114,7 @@ class player implements renderable, templatable {
             // Unescaped here: the template's {{name}} escapes it (escaping twice showed "&amp;").
             'name' => format_string($instance->name, true, ['context' => $context, 'escape' => false]),
             'introhtml' => '',
-            'cover' => $this->get_cover_url($context, $slidelist),
+            'cover' => $coverurl,
             'factstext' => get_string('startfacts', 'mod_whakaharatau', (object) [
                 'slides' => get_string(
                     $slidecount === 1 ? 'startslidecountone' : 'startslidecount',
@@ -145,6 +146,7 @@ class player implements renderable, templatable {
             'editurl' => $canmanage ? (new moodle_url('/mod/whakaharatau/edit.php', ['id' => $cm->id]))->out(false) : '',
             'lastattemptid' => $latest ? $latest->get_id() : 0,
         ];
+        $data += $coverfade;
         if (!$this->inline && trim((string) $instance->intro) !== '') {
             $data['introhtml'] = format_module_intro('whakaharatau', $instance, $cm->id);
         }
@@ -152,18 +154,22 @@ class player implements renderable, templatable {
     }
 
     /**
-     * URL of the start screen's image: the cover image, else the first slide's image.
+     * The start screen's image and its fade: the cover image with the cover's fade, else the first slide's image
+     * with that slide's fade.
      *
      * @param context_module $context module context
      * @param stdClass[] $slidelist the instance's slides in order (slides::get_slides())
-     * @return string empty when there is none
+     * @return array [URL (empty when there is none), instance_settings::get_fade()]
      */
-    protected function get_cover_url(context_module $context, array $slidelist): string {
+    protected function get_cover(context_module $context, array $slidelist): array {
+        $fade = instance_settings::get_fade($this->instance->coverfade, $this->instance->coverfadewidth);
         $url = slides::get_file_url($context, slides::AREA_COVER, 0);
         if (!$url && $slidelist) {
-            $url = slides::get_file_url($context, slides::AREA_IMAGE, (int) reset($slidelist)->id);
+            $first = reset($slidelist);
+            $url = slides::get_file_url($context, slides::AREA_IMAGE, (int) $first->id);
+            $fade = instance_settings::get_fade($first->fade, $first->fadewidth);
         }
-        return $url ? $url->out(false) : '';
+        return [$url ? $url->out(false) : '', $fade];
     }
 
     /**

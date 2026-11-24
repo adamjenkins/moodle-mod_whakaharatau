@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 
+use mod_whakaharatau\form\fade_slider;
 use mod_whakaharatau\local\instance_settings as settings;
 use mod_whakaharatau\local\slides;
 
@@ -149,6 +150,11 @@ class mod_whakaharatau_mod_form extends moodleform_mod {
         );
         $mform->addHelpButton('transcriptsbefore', 'transcriptsbefore', 'mod_whakaharatau');
 
+        $mform->addElement('select', 'fade', get_string('fade', 'mod_whakaharatau'), settings::get_yesno_choices());
+        $mform->addHelpButton('fade', 'fade', 'mod_whakaharatau');
+        fade_slider::add_to_form($mform, 'fadewidth');
+        $mform->hideIf('fadewidth', 'fade', 'eq', 0);
+
         $mform->addElement(
             'filemanager',
             'cover',
@@ -157,6 +163,11 @@ class mod_whakaharatau_mod_form extends moodleform_mod {
             slides::filemanager_options(slides::AREA_COVER)
         );
         $mform->addHelpButton('cover', 'cover', 'mod_whakaharatau');
+
+        $mform->addElement('select', 'coverfade', get_string('coverfade', 'mod_whakaharatau'), settings::get_yesno_choices());
+        $mform->addHelpButton('coverfade', 'coverfade', 'mod_whakaharatau');
+        fade_slider::add_to_form($mform, 'coverfadewidth');
+        $mform->hideIf('coverfadewidth', 'coverfade', 'eq', 0);
 
         // Test scoring.
         $mform->addElement('header', 'scoringheading', get_string('scoringheading', 'mod_whakaharatau'));
@@ -285,6 +296,12 @@ class mod_whakaharatau_mod_form extends moodleform_mod {
 
         if ((int) ($data['mode'] ?? 0) === settings::MODE_TEST && isset($data['grade']) && (int) $data['grade'] < 0) {
             $errors['grade'] = get_string('errorscalenotsupported', 'mod_whakaharatau');
+        }
+
+        foreach (['fadewidth', 'coverfadewidth'] as $name) {
+            if (isset($data[$name]) && ($error = fade_slider::validate($data[$name]))) {
+                $errors[$name] = $error;
+            }
         }
 
         // Practice mode has no grade item, so a grade completion condition could never be met.

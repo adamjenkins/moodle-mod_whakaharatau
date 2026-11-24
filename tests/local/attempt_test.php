@@ -661,8 +661,8 @@ final class attempt_test extends \advanced_testcase {
         $first = (int) $slides[0]->id;
 
         $data = $attempt->get_slide_data($first);
-        $this->assertSame(['slideid', 'imageurl', 'alttext', 'decorative', 'prompthtml', 'promptlang', 'promptaudiourl',
-            'options'], array_keys($data));
+        $this->assertSame(['slideid', 'imageurl', 'alttext', 'decorative', 'fadeside', 'fadebottom', 'prompthtml',
+            'promptlang', 'promptaudiourl', 'options'], array_keys($data));
         $this->assertSame(['optionid', 'number', 'audiourl', 'transcript'], array_keys($data['options'][0]));
         $json = json_encode($data);
         $this->assertStringNotContainsString('iscorrect', $json);

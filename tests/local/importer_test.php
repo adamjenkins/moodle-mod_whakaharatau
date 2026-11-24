@@ -251,6 +251,8 @@ final class importer_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_whakaharatau');
         $generator->create_slide(['whakaharatauid' => $source->id, 'alttext' => 'Kurī', 'prompt' => 'He aha?',
             'options' => 3, 'correct' => 2, 'transcripts' => ['kurī', 'ngeru', 'manu']]);
+        $firstid = (int) array_key_first(slides::get_slides((int) $source->id));
+        slides::update_slide((object) ['id' => $firstid, 'fade' => 0, 'fadewidth' => 44]);
         $generator->create_slide(['whakaharatauid' => $source->id, 'decorative' => 1, 'alttext' => '', 'options' => 2,
             'correct' => 0]);
 
@@ -280,6 +282,7 @@ final class importer_test extends \advanced_testcase {
             $this->assertSame($slide->alttext, $copy->alttext);
             $this->assertSame((int) $slide->decorative, (int) $copy->decorative);
             $this->assertSame($slide->prompt, $copy->prompt);
+            $this->assertEquals([$slide->fade, $slide->fadewidth], [$copy->fade, $copy->fadewidth]);
             $a = array_values(slides::get_options((int) $slide->id));
             $b = array_values(slides::get_options((int) $copy->id));
             $this->assertSame(array_column($a, 'transcript'), array_column($b, 'transcript'));

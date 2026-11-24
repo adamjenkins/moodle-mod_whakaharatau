@@ -101,7 +101,7 @@
     height: auto;
     max-height: 80vh;
     object-fit: contain;
-    mask-image: linear-gradient(to right, #000 85%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--mwh-fade-side, 15%)), transparent 100%);
 }
 
 .mod-whakaharatau-panel {
@@ -587,7 +587,7 @@
     /* The whole picture above the option rows, never a cropped band; at most 60% of the screen height. */
     .mod-whakaharatau-image {
         max-height: 60vh;
-        mask-image: linear-gradient(to bottom, #000 90%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 calc(100% - var(--mwh-fade-bottom, 10%)), transparent 100%);
     }
 
     .mod-whakaharatau-panel {
@@ -654,6 +654,12 @@
 }
 
 /* Authoring pages (Edit slides, Import review). */
+.mod_whakaharatau-fadeslider {
+    width: 12rem;
+    max-width: 100%;
+    margin-left: 0.75rem;
+}
+
 .mod_whakaharatau-slidethumb img,
 .mod_whakaharatau-importthumb {
     width: 120px;

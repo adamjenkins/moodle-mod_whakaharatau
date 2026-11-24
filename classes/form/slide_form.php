@@ -22,6 +22,7 @@ require_once($CFG->libdir . '/formslib.php');
 
 use context_module;
 use context_user;
+use mod_whakaharatau\local\instance_settings;
 use mod_whakaharatau\local\slides;
 use moodle_exception;
 use stdClass;
@@ -99,6 +100,20 @@ class slide_form extends \moodleform {
         );
         $mform->addHelpButton('decorative', 'decorative', 'mod_whakaharatau');
         $mform->hideIf('alttext', 'decorative', 'checked');
+        $mform->addElement(
+            'advcheckbox',
+            'fade',
+            get_string('slidefade', 'mod_whakaharatau'),
+            get_string('slidefade_label', 'mod_whakaharatau')
+        );
+        $mform->addHelpButton('fade', 'slidefade', 'mod_whakaharatau');
+        fade_slider::add_to_form($mform, 'fadewidth');
+        $mform->hideIf('fadewidth', 'fade', 'notchecked');
+        foreach (['fade', 'fadewidth'] as $name) {
+            if (instance_settings::is_locked($name)) {
+                $mform->hardFreeze($name);
+            }
+        }
 
         // Prompt.
         $mform->addElement('header', 'prompthdr', get_string('slideprompt', 'mod_whakaharatau'));
@@ -217,6 +232,9 @@ class slide_form extends \moodleform {
         if (empty($data['decorative']) && trim((string) ($data['alttext'] ?? '')) === '') {
             $errors['alttext'] = get_string('alttextrequired', 'mod_whakaharatau');
         }
+        if (isset($data['fadewidth']) && ($error = fade_slider::validate($data['fadewidth']))) {
+            $errors['fadewidth'] = $error;
+        }
         if ($error = self::check_draft((int) ($data['promptaudio'] ?? 0), slides::AREA_PROMPT, false)) {
             $errors['promptaudio'] = $error;
         }
@@ -310,15 +328,24 @@ class slide_form extends \moodleform {
      * @param context_module $context module context
      * @param int $cmid course module id
      * @param stdClass|null $slide slide record, or null for a new slide
+     * @param stdClass|null $instance whakaharatau record, for a new slide's default fade
      * @return stdClass data for set_data()
      */
-    public static function prepare_data(context_module $context, int $cmid, ?stdClass $slide): stdClass {
+    public static function prepare_data(
+        context_module $context,
+        int $cmid,
+        ?stdClass $slide,
+        ?stdClass $instance = null
+    ): stdClass {
+        $defaults = instance_settings::get_defaults();
         $data = (object) [
             'id' => $cmid,
             'action' => 'edit',
             'slideid' => 0,
             'alttext' => '',
             'decorative' => 0,
+            'fade' => (int) ($instance->fade ?? $defaults['fade']),
+            'fadewidth' => (int) ($instance->fadewidth ?? $defaults['fadewidth']),
             'prompt' => '',
             'promptlang' => '',
         ];
@@ -328,6 +355,8 @@ class slide_form extends \moodleform {
         $data->slideid = (int) $slide->id;
         $data->alttext = (string) $slide->alttext;
         $data->decorative = (int) $slide->decorative;
+        $data->fade = (int) $slide->fade;
+        $data->fadewidth = (int) $slide->fadewidth;
         $data->prompt = (string) $slide->prompt;
         $data->promptlang = (string) ($slide->promptlang ?? '');
         $data->image = slides::prepare_draft($context, slides::AREA_IMAGE, (int) $slide->id);
@@ -367,6 +396,12 @@ class slide_form extends \moodleform {
             'promptformat' => FORMAT_PLAIN,
             'promptlang' => (string) ($data->promptlang ?? ''),
         ];
+        // Left out when the site locks it: a new slide takes the activity's default, an old one keeps its own.
+        foreach (['fade', 'fadewidth'] as $name) {
+            if (isset($data->$name) && !instance_settings::is_locked($name)) {
+                $fields->$name = (int) $data->$name;
+            }
+        }
         $slideid = (int) ($data->slideid ?? 0);
         if ($slideid) {
             $slide = slides::get_slide($slideid);

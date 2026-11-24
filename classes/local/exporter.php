@@ -51,7 +51,8 @@ final class exporter {
         }
         $width = max(2, strlen((string) count($slides)));
 
-        $header = ['image', 'alt', 'decorative', 'prompt', 'promptlang', 'promptaudio', 'correct'];
+        $header = ['image', 'alt', 'decorative', 'prompt', 'promptlang', 'promptaudio', 'correct', 'fade',
+            'fadewidth'];
         for ($i = 1; $i <= $maxoptions; $i++) {
             $header[] = 'audio' . $i;
         }
@@ -68,6 +69,8 @@ final class exporter {
             $row = array_fill_keys($header, '');
             $row['alt'] = (string) $slide->alttext;
             $row['decorative'] = empty($slide->decorative) ? '0' : '1';
+            $row['fade'] = empty($slide->fade) ? '0' : '1';
+            $row['fadewidth'] = (string) (int) $slide->fadewidth;
             $row['prompt'] = (string) $slide->prompt;
             $row['promptlang'] = (string) ($slide->promptlang ?? '');
 

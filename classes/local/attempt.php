@@ -676,6 +676,7 @@ class attempt {
      *
      * @param int $slideid slide id (must belong to this activity)
      * @return array keys: slideid, imageurl (string|null), alttext (plain text), decorative (bool),
+     *      fadeside and fadebottom (int, percent of the picture),
      *      prompthtml (formatted HTML, '' when empty), promptlang (string|null), promptaudiourl (string|null),
      *      options (list of: optionid, number (1-based), audiourl (string|null), transcript (plain text|null))
      */
@@ -706,6 +707,7 @@ class attempt {
             'imageurl' => $imageurl ? $imageurl->out(false) : null,
             'alttext' => empty($slide->decorative) ? (string) $slide->alttext : '',
             'decorative' => !empty($slide->decorative),
+        ] + instance_settings::get_fade($slide->fade, $slide->fadewidth) + [
             'prompthtml' => $prompt === '' ? '' : format_text(
                 $prompt,
                 (int) $slide->promptformat,

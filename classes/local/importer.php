@@ -450,6 +450,14 @@ final class importer {
             }
             $slide['alttext'] = $get('alt');
             $slide['decorative'] = self::truthy($get('decorative')) ? 1 : 0;
+            // Empty or not understood: the activity's default for new slides.
+            if ($get('fade') !== '') {
+                $slide['fade'] = self::truthy($get('fade')) ? 1 : 0;
+            }
+            $fadewidth = rtrim($get('fadewidth'), '% ');
+            if (is_numeric($fadewidth)) {
+                $slide['fadewidth'] = instance_settings::clamp_fade($fadewidth);
+            }
             $slide['prompt'] = $get('prompt');
             $slide['promptlang'] = clean_param($get('promptlang'), PARAM_ALPHANUMEXT);
             if (($ref = $get('promptaudio')) !== '') {
@@ -685,10 +693,15 @@ final class importer {
         // Replaced slides are deleted only after every new file is saved: file storage is not rolled back, so a
         // failed save must not leave the restored old slides without their media.
         $oldslideids = $replace ? array_map('intval', array_keys(slides::get_slides((int) $instance->id))) : [];
+        // A setting the site locks is not taken from the file either.
+        $lockedfade = instance_settings::is_locked('fade');
+        $lockedwidth = instance_settings::is_locked('fadewidth');
         foreach ($plan['slides'] as $slide) {
             $slideid = slides::create_slide((int) $instance->id, (object) [
                 'alttext' => $slide['alttext'],
                 'decorative' => $slide['decorative'],
+                'fade' => $lockedfade ? null : $slide['fade'],
+                'fadewidth' => $lockedwidth ? null : $slide['fadewidth'],
                 'prompt' => $slide['prompt'],
                 'promptformat' => FORMAT_PLAIN,
                 'promptlang' => $slide['promptlang'],
@@ -751,6 +764,8 @@ final class importer {
             'image' => null,
             'alttext' => '',
             'decorative' => 0,
+            'fade' => null,
+            'fadewidth' => null,
             'prompt' => '',
             'promptlang' => '',
             'promptaudio' => null,

@@ -48,6 +48,10 @@ if ($ADMIN->fulltree) {
         'showprogress' => instance_settings::get_yesno_choices(),
         'autoplay' => instance_settings::get_yesno_choices(),
         'transcriptsbefore' => instance_settings::get_yesno_choices(),
+        'fade' => instance_settings::get_yesno_choices(),
+        'fadewidth' => instance_settings::get_fade_choices(),
+        'coverfade' => instance_settings::get_yesno_choices(),
+        'coverfadewidth' => instance_settings::get_fade_choices(),
         'feedbackmode' => instance_settings::get_feedback_choices(),
         'scoring' => instance_settings::get_scoring_choices(),
         'slidescore' => instance_settings::get_slidescore_choices(),
@@ -75,4 +79,18 @@ if ($ADMIN->fulltree) {
         $setting->set_locked_flag_options(admin_setting_flag::ENABLED, false);
         $settings->add($setting);
     }
+
+    // A site-wide look, not a default: it applies to every activity.
+    $settings->add(new admin_setting_heading(
+        'whakaharatau/siteheading',
+        get_string('siteheading', 'mod_whakaharatau'),
+        ''
+    ));
+    $settings->add(new admin_setting_configselect(
+        'whakaharatau/stackedfade',
+        new lang_string('stackedfade', 'mod_whakaharatau'),
+        new lang_string('stackedfade_help', 'mod_whakaharatau'),
+        instance_settings::FADE_STACKED,
+        instance_settings::get_fade_choices()
+    ));
 }

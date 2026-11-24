@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/whakaharatau/db" VERSION="20261117" COMMENT="XMLDB file for Moodle mod/whakaharatau"
+<XMLDB PATH="mod/whakaharatau/db" VERSION="20261124" COMMENT="XMLDB file for Moodle mod/whakaharatau"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -26,6 +26,10 @@
         <FIELD NAME="scoring" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = by correct answers, 1 = by slides completed"/>
         <FIELD NAME="autoplay" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = autoplay the slide's prompt audio"/>
         <FIELD NAME="transcriptsbefore" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = show option transcripts before answering"/>
+        <FIELD NAME="fade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Picture fade of new slides: 1 = on"/>
+        <FIELD NAME="fadewidth" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="Side fade of new slides, percent of the picture (0-50)"/>
+        <FIELD NAME="coverfade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Fade of the cover picture: 1 = on"/>
+        <FIELD NAME="coverfadewidth" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="Side fade of the cover picture, percent (0-50)"/>
         <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Maximum grade (Test mode)"/>
         <FIELD NAME="completionallslides" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Custom completion: every slide answered at least once"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -46,6 +50,8 @@
         <FIELD NAME="promptlang" TYPE="char" LENGTH="30" NOTNULL="false" SEQUENCE="false" COMMENT="Optional language code of the prompt, e.g. mi"/>
         <FIELD NAME="alttext" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="decorative" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = the image is decorative and needs no alt text"/>
+        <FIELD NAME="fade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = the picture fades into the panel"/>
+        <FIELD NAME="fadewidth" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="Side fade, percent of the picture (0-50)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

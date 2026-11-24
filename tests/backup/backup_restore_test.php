@@ -160,12 +160,18 @@ final class backup_restore_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $this->setup_data();
+        $DB->update_record('whakaharatau', (object) ['id' => $this->instance->id, 'coverfade' => 0, 'fadewidth' => 22]);
+        $this->instance = $DB->get_record('whakaharatau', ['id' => $this->instance->id]);
+        slides::update_slide((object) ['id' => $this->slides[0]->id, 'fade' => 0, 'fadewidth' => 44]);
         $restored = $this->backup_and_restore(false);
+        $copy = slides::get_slide($this->id_maps($restored)[0][(int) $this->slides[0]->id]);
+        $this->assertEquals([0, 44], [$copy->fade, $copy->fadewidth]);
 
         foreach (
             ['name', 'mode', 'shuffle', 'repeatmode', 'optionorder', 'showprogress', 'displayinline',
                 'feedbackmode', 'triesperslide', 'slidescore', 'attempts', 'grademethod', 'allowreview', 'scoring',
-                'autoplay', 'transcriptsbefore', 'grade', 'completionallslides'] as $field
+                'autoplay', 'transcriptsbefore', 'grade', 'completionallslides', 'fade', 'fadewidth', 'coverfade',
+                'coverfadewidth'] as $field
         ) {
             $this->assertEquals($this->instance->$field, $restored->$field, $field);
         }

@@ -35,6 +35,7 @@
     * showprogress - show the progress bar
     * number, count, percent - progress values
     * imageurl, alttext - the image (alttext empty when decorative)
+    * fadeside, fadebottom - fade of the image's side and (stacked) bottom edge, percent; 0 = none
     * prompthtml, promptlang - the formatted prompt and its language, may be empty
     * promptaudiourl, promptplaylabel, promptpauselabel - the prompt audio, may be empty
     * options - list of: optionid, number, audiourl, transcript, playlabel, pauselabel, chooselabel
@@ -52,6 +53,8 @@
         "percent": 35,
         "imageurl": "https://example.com/pluginfile.php/40/mod_whakaharatau/slideimage/5/1/image.jpg",
         "alttext": "Two people beside a car at the river",
+        "fadeside": 15,
+        "fadebottom": 10,
         "prompthtml": "",
         "promptlang": "",
         "promptaudiourl": "",
@@ -82,7 +85,7 @@
     }
 }}
 <div class="mod-whakaharatau-screen mod-whakaharatau-slide" data-region="slide" data-slideid="{{slideid}}">
-    <div class="mod-whakaharatau-figure">
+    <div class="mod-whakaharatau-figure" style="--mwh-fade-side: {{fadeside}}%; --mwh-fade-bottom: {{fadebottom}}%;">
         {{#imageurl}}
             <img class="mod-whakaharatau-image" src="{{imageurl}}" alt="{{alttext}}" decoding="async">
         {{/imageurl}}

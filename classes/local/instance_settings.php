@@ -83,11 +83,18 @@ final class instance_settings {
     /** @var int Score slides completed (as the SCORM package did). */
     const SCORING_COMPLETED = 1;
 
+    /** @var int Largest picture fade, as a percentage of the picture. */
+    const FADE_MAX = 50;
+    /** @var int Built-in side fade, in percent. */
+    const FADE_WIDTH = 15;
+    /** @var int Built-in fade of the bottom edge when the picture is stacked above the options, in percent. */
+    const FADE_STACKED = 10;
+
     /** @var string[] Names of the settings that have a site default in settings.php and a mod_form element. */
     const DEFAULTABLE = [
         'mode', 'shuffle', 'repeatmode', 'optionorder', 'showprogress', 'displayinline', 'feedbackmode',
         'practicetries', 'testtries', 'slidescore', 'attempts', 'grademethod', 'allowreview', 'scoring',
-        'autoplay', 'transcriptsbefore',
+        'autoplay', 'transcriptsbefore', 'fade', 'fadewidth', 'coverfade', 'coverfadewidth',
     ];
 
     /**
@@ -113,7 +120,58 @@ final class instance_settings {
             'scoring' => self::SCORING_CORRECT,
             'autoplay' => 0,
             'transcriptsbefore' => 0,
+            'fade' => 1,
+            'fadewidth' => self::FADE_WIDTH,
+            'coverfade' => 1,
+            'coverfadewidth' => self::FADE_WIDTH,
         ];
+    }
+
+    /**
+     * Fade width choices, 0% to FADE_MAX%.
+     *
+     * @return array value => label
+     */
+    public static function get_fade_choices(): array {
+        $choices = [];
+        for ($i = 0; $i <= self::FADE_MAX; $i++) {
+            $choices[$i] = get_string('percents', 'core', $i);
+        }
+        return $choices;
+    }
+
+    /**
+     * A fade width brought into range.
+     *
+     * @param mixed $width percent
+     * @return int 0 to FADE_MAX
+     */
+    public static function clamp_fade($width): int {
+        return max(0, min(self::FADE_MAX, (int) $width));
+    }
+
+    /**
+     * Whether the site locks a setting, so that teachers cannot change it.
+     *
+     * @param string $name setting name
+     * @return bool
+     */
+    public static function is_locked(string $name): bool {
+        return (bool) get_config('whakaharatau', $name . '_locked');
+    }
+
+    /**
+     * The fade of a picture as the player draws it. Off (or a width of 0) is no fade at all, at either edge.
+     *
+     * @param mixed $fade whether the fade is on
+     * @param mixed $width side fade in percent
+     * @return int[] fadeside and fadebottom, in percent (bottom: used when the picture is stacked above the options)
+     */
+    public static function get_fade($fade, $width): array {
+        $side = empty($fade) ? 0 : self::clamp_fade($width);
+        $stacked = get_config('whakaharatau', 'stackedfade');
+        $stacked = ($stacked === false || $stacked === '') ? self::FADE_STACKED : self::clamp_fade($stacked);
+        return ['fadeside' => $side, 'fadebottom' => $side ? $stacked : 0];
     }
 
     /**

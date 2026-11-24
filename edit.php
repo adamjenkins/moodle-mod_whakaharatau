@@ -112,7 +112,7 @@ if ($action === 'edit') {
         redirect($listurl, get_string('slidesaved', 'mod_whakaharatau'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
     if (!$mform->is_submitted()) {
-        $mform->set_data(slide_form::prepare_data($context, (int) $cm->id, $slide));
+        $mform->set_data(slide_form::prepare_data($context, (int) $cm->id, $slide, $instance));
     }
 
     echo $OUTPUT->header();

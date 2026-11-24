@@ -419,6 +419,8 @@ class Player {
             percent: count > 0 ? Math.round(number / count * 100) : 0,
             imageurl: data.imageurl || '',
             alttext: data.decorative ? '' : data.alttext,
+            fadeside: data.fadeside,
+            fadebottom: data.fadebottom,
             prompthtml: data.prompthtml || '',
             promptlang: data.promptlang || '',
             promptaudiourl: data.promptaudiourl || '',

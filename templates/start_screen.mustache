@@ -30,6 +30,7 @@
     * name - activity name (formatted)
     * introhtml - formatted description, empty on the course page (shown by the course page itself)
     * cover - image URL, may be empty
+    * fadeside, fadebottom - fade of the image's side and (stacked) bottom edge, percent; 0 = none
     * factstext, playmodetext, previoustext - plain text
     * showstart, showcontinue, showstartagain, noattemptsleft, cannotattempt, notplayable - what to show
     * lastattemptid - latest finished attempt, 0 if none
@@ -41,6 +42,8 @@
         "name": "H1.12 Whakaharatau",
         "introhtml": "<p>Listen to each clip and choose the one that matches the picture.</p>",
         "cover": "https://example.com/pluginfile.php/40/mod_whakaharatau/cover/0/1/cover.png",
+        "fadeside": 15,
+        "fadebottom": 10,
         "factstext": "20 slides · Test, 2 attempts left",
         "playmodetext": "Shuffled · One pass",
         "previoustext": "Best score so far: 80%",
@@ -56,7 +59,7 @@
     }
 }}
 <div class="mod-whakaharatau-screen mod-whakaharatau-start" data-region="startscreen">
-    <div class="mod-whakaharatau-figure">
+    <div class="mod-whakaharatau-figure" style="--mwh-fade-side: {{fadeside}}%; --mwh-fade-bottom: {{fadebottom}}%;">
         {{#cover}}
             <img class="mod-whakaharatau-image" src="{{cover}}" alt="" decoding="async">
         {{/cover}}

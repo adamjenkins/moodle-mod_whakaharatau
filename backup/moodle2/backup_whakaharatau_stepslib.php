@@ -42,14 +42,14 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
         $whakaharatau = new backup_nested_element('whakaharatau', ['id'], [
             'name', 'intro', 'introformat', 'mode', 'shuffle', 'repeatmode', 'optionorder', 'showprogress',
             'displayinline', 'feedbackmode', 'triesperslide', 'slidescore', 'attempts', 'grademethod',
-            'allowreview', 'scoring', 'autoplay', 'transcriptsbefore', 'grade', 'completionallslides',
-            'timecreated', 'timemodified',
+            'allowreview', 'scoring', 'autoplay', 'transcriptsbefore', 'fade', 'fadewidth', 'coverfade',
+            'coverfadewidth', 'grade', 'completionallslides', 'timecreated', 'timemodified',
         ]);
 
         $slides = new backup_nested_element('slides');
         $slide = new backup_nested_element('slide', ['id'], [
-            'sortorder', 'prompt', 'promptformat', 'promptlang', 'alttext', 'decorative', 'timecreated',
-            'timemodified',
+            'sortorder', 'prompt', 'promptformat', 'promptlang', 'alttext', 'decorative', 'fade', 'fadewidth',
+            'timecreated', 'timemodified',
         ]);
 
         $options = new backup_nested_element('options');

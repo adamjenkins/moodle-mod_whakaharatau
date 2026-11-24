@@ -66,6 +66,11 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         global $CFG, $DB;
         require_once($CFG->dirroot . '/mod/whakaharatau/lib.php');
         $data = (object) $data;
+        // A backup from before the fade settings: the fade every picture had then, whatever the site default is now.
+        foreach (['fade', 'coverfade'] as $field) {
+            $data->$field = $data->$field ?? 1;
+            $data->{$field . 'width'} = $data->{$field . 'width'} ?? \mod_whakaharatau\local\instance_settings::FADE_WIDTH;
+        }
         // A backup file is input: clamp the settings as the activity form does. The backed-up row is passed as the
         // current record too, so values the form would keep (such as a Practice activity's maximum grade) are kept.
         whakaharatau_normalise_instance_data($data, clone $data);
