@@ -135,6 +135,8 @@ class activity_tables {
             foreach (array_keys($columns) as $key) {
                 $cells[$key] = report_table::cell($text[$key]);
             }
+            // A learner's attempts stay together and in order.
+            $cells['fullname']['sort'] = $text['fullname'] . ' ' . $row->userid . ' ' . $text['attempt'];
             $cells['fullname']['url'] = (new moodle_url('/user/view.php', ['id' => $row->userid, 'course' => $courseid]))
                 ->out(false);
             foreach (['timestart', 'timefinish', 'timemodified'] as $key) {
@@ -153,7 +155,7 @@ class activity_tables {
             }
             $table->add_row($cells, (int) $row->id);
         }
-        return $table;
+        return $table->sort_by('fullname', false);
     }
 
     // Learners.
@@ -469,10 +471,9 @@ class activity_tables {
      *
      * @param stdClass $question question version
      * @param stdClass|null $total report_data::get_totals() entry, null when nobody answered
-     * @param bool $hidden hide the figures (anonymised, too few learners)
      * @return array[]
      */
-    protected function get_question_cells(stdClass $question, ?stdClass $total, bool $hidden = false): array {
+    protected function get_question_cells(stdClass $question, ?stdClass $total): array {
         $n = $total->learners ?? 0;
         $cells = [
             'number' => report_table::cell($question->numbertext, $question->numbersort),
@@ -485,16 +486,6 @@ class activity_tables {
         ];
         foreach ($question->options as $i => $option) {
             $cells['cliptext' . ($i + 1)] = report_table::cell($option->transcript);
-        }
-        if ($hidden) {
-            $few = self::str('report_toofew', instance_settings::get_anonymous_minimum());
-            foreach (
-                ['learners', 'correct', 'correctpercent', 'incorrect', 'incorrectpercent', 'firsttry', 'firsttrypercent',
-                    'clips'] as $key
-            ) {
-                $cells[$key] = report_table::cell($key === 'learners' ? $few : '', '');
-            }
-            return $cells;
         }
         $clips = [];
         $known = 0;
@@ -697,20 +688,120 @@ class activity_tables {
     }
 
     /**
-     * The question report without learners, hiding results from too few of them.
+     * The anonymised questions to hide. If any is hidden, so is the smallest of the others, when the hidden ones together
+     * could be worked out from the total of the activity.
+     *
+     * @param stdClass[] $totals totals
+     * @param stdClass[] $all totals without the filter
+     * @param bool $filtered whether there is a filter
+     * @return bool[] by key of $totals
+     */
+    protected function get_hidden_questions(array $totals, array $all, bool $filtered): array {
+        $hidden = [];
+        foreach ($totals as $key => $total) {
+            if (report_data::is_hidden($total->learners, $all[$key]->learners ?? $total->learners, $filtered)) {
+                $hidden[$key] = true;
+            }
+        }
+        if (count($hidden) === 0 || count($hidden) === count($totals)) {
+            return $hidden;
+        }
+        $shown = array_diff_key($totals, $hidden);
+        uasort($shown, fn($a, $b) => [$a->learners, $a->slideid] <=> [$b->learners, $b->slideid]);
+        $hidden[array_key_first($shown)] = true;
+        return $hidden;
+    }
+
+    /**
+     * The questions of the anonymised report: one row per version, or one for all the versions put together.
+     *
+     * @param stdClass[] $all report_data::get_anonymous_totals() without the filter
+     * @return stdClass[] get_ordered_questions() entries with anonymousversion, 0 = put together
+     */
+    protected function get_anonymous_questions(array $all): array {
+        $list = [];
+        $answered = [];
+        foreach ($all as $total) {
+            $answered[$total->slideid][$total->version] = true;
+        }
+        $reference = [];
+        foreach ($all as $total) {
+            if ($total->version) {
+                $reference[$total->slideid . '-' . $total->version] = $total;
+            }
+        }
+        foreach ($this->get_questions() as $slideid => $versions) {
+            // Put together, they are shown as the newest version.
+            if (isset($answered[$slideid][0])) {
+                $question = end($versions);
+                $question->anonymousversion = 0;
+                $list[] = $question;
+                continue;
+            }
+            foreach ($versions as $version => $question) {
+                if ($question->current || isset($reference["$slideid-$version"])) {
+                    $question->anonymousversion = $version;
+                    $list[] = $question;
+                }
+            }
+        }
+        usort($list, fn($a, $b) => [$a->numbersort, abs($a->slideid), $a->version] <=>
+            [$b->numbersort, abs($b->slideid), $b->version]);
+        return $list;
+    }
+
+    /**
+     * The question report without learners: no results from too few of them, and only bands and rounded percentages of the
+     * others, so that a hidden result cannot be worked out from the rest or from another report.
      *
      * @return report_table
      */
     public function anonymised(): report_table {
         $table = new report_table(self::str('report_anonymised'));
-        $this->add_question_columns($table);
-        $totals = report_data::get_totals($this->data->get_results());
-        $all = $this->filter->is_active() ?
-            report_data::get_totals($this->make_data(new report_filter())->get_results()) : $totals;
-        foreach ($this->get_ordered_questions($all) as $question) {
-            $key = $question->slideid . '-' . $question->version;
-            $hidden = report_data::is_hidden($totals[$key]->learners ?? 0, $all[$key]->learners ?? 0);
-            $table->add_row($this->get_question_cells($question, $totals[$key] ?? null, $hidden));
+        $table->column('number', self::str('report_slide'), true)
+            ->column('slideid', self::str('report_questionid'), true)
+            ->column('version', self::str('report_version'), true)
+            ->column('description', self::str('report_alttext'))
+            ->column('prompt', self::str('prompt'))
+            ->column('learners', self::str('report_learners'), true)
+            ->column('correctpercent', self::str('report_correctpercent'), true)
+            ->column('firsttrypercent', self::str('report_firsttryrate'), true)
+            ->column('clips', self::str('report_clipschosen'))
+            ->column('correctclip', self::str('report_correctclip'), false, 'download');
+        $filtered = $this->filter->is_active();
+        $min = report_data::get_minimum($filtered);
+        $results = $this->data->get_results();
+        $complete = $filtered ? $this->make_data(new report_filter())->get_results() : $results;
+        $totals = report_data::get_anonymous_totals($results, $complete, $min);
+        $all = $filtered ? report_data::get_anonymous_totals($complete, $results, $min) : $totals;
+        $hidden = $this->get_hidden_questions($totals, $all, $filtered);
+        foreach ($this->get_anonymous_questions($all) as $question) {
+            $key = $question->slideid . '-' . $question->anonymousversion;
+            $total = $totals[$key] ?? null;
+            $cells = array_intersect_key($this->get_question_cells($question, null), array_flip(['number', 'slideid',
+                'version', 'description', 'prompt', 'correctclip']));
+            if (!$question->anonymousversion) {
+                $cells['version'] = report_table::cell(self::str('report_allversions'), 0);
+            }
+            if (!$total || isset($hidden[$key])) {
+                // A question hidden to protect another one says the same.
+                $cells['learners'] = report_table::cell(self::str('report_toofew', $min), '');
+                $table->add_row($cells);
+                continue;
+            }
+            $n = $total->learners;
+            $clips = [];
+            foreach ($question->options as $option) {
+                $share = report_data::anonymous_percent(($total->choices[$option->id] ?? 0) / $n * 100, $n);
+                $clips[] = self::str($option->correct ? 'report_clipcountcorrect' : 'report_clipcount', (object) [
+                    'clip' => $this->get_clip_label($question, $option->id), 'count' => $share['text']]);
+            }
+            $table->add_row($cells + [
+                'learners' => report_data::anonymous_learners($n),
+                'correctpercent' => report_data::anonymous_percent($total->correct / $n * 100, $n),
+                'firsttrypercent' => report_data::anonymous_percent($total->firsttry / $n * 100, $n),
+                'clips' => report_table::cell(implode('; ', $clips)),
+            ]);
         }
         return $table;
     }

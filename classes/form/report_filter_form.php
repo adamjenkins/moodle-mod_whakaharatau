@@ -31,7 +31,7 @@ use mod_whakaharatau\local\report_filter;
  */
 class report_filter_form extends \moodleform {
     /**
-     * Form definition. Custom data: cohorts (id => name), withlearner (bool), active (bool).
+     * Form definition. Custom data: cohorts (id => name), anonymised (bool), active (bool).
      *
      * @return void
      */
@@ -39,7 +39,8 @@ class report_filter_form extends \moodleform {
         $mform = $this->_form;
         $mform->addElement('header', 'filterhdr', get_string('report_filter', 'mod_whakaharatau'));
         $mform->setExpanded('filterhdr', !empty($this->_customdata['active']));
-        if (!empty($this->_customdata['withlearner'])) {
+        $anonymised = !empty($this->_customdata['anonymised']);
+        if (!$anonymised) {
             $mform->addElement('text', 'learner', get_string('report_filterlearner', 'mod_whakaharatau'), ['size' => 30]);
             $mform->setType('learner', PARAM_TEXT);
             $mform->addHelpButton('learner', 'report_filterlearner', 'mod_whakaharatau');
@@ -51,10 +52,13 @@ class report_filter_form extends \moodleform {
         }
         $mform->addElement('select', 'cohort', get_string('report_cohort', 'mod_whakaharatau'), $cohorts);
         $mform->addHelpButton('cohort', 'report_cohort', 'mod_whakaharatau');
-        // Not named like the URL parameters: a date is posted as an array.
-        $mform->addElement('date_selector', 'datefrom', get_string('report_from', 'mod_whakaharatau'), ['optional' => true]);
-        $mform->addElement('date_selector', 'dateto', get_string('report_to', 'mod_whakaharatau'), ['optional' => true]);
-        $mform->addHelpButton('dateto', 'report_to', 'mod_whakaharatau');
+        if (!$anonymised) {
+            // Not named like the URL parameters: a date is posted as an array.
+            $mform->addElement('date_selector', 'datefrom', get_string('report_from', 'mod_whakaharatau'), [
+                'optional' => true]);
+            $mform->addElement('date_selector', 'dateto', get_string('report_to', 'mod_whakaharatau'), ['optional' => true]);
+            $mform->addHelpButton('dateto', 'report_to', 'mod_whakaharatau');
+        }
         $buttons = [
             $mform->createElement('submit', 'applyfilter', get_string('report_applyfilter', 'mod_whakaharatau')),
             $mform->createElement('cancel', 'clearfilter', get_string('report_clearfilter', 'mod_whakaharatau')),
@@ -83,18 +87,18 @@ class report_filter_form extends \moodleform {
      * @param \moodle_url $url page URL without filters
      * @param \context $context context of the report
      * @param report_filter $filter filters now set
-     * @param bool $withlearner whether to offer the learner filter
+     * @param bool $anonymised whether to offer only the cohort filter
      * @return self
      */
     public static function handle(
         \moodle_url $url,
         \context $context,
         report_filter $filter,
-        bool $withlearner = true
+        bool $anonymised = false
     ): self {
         $form = new self(new \moodle_url($url, $filter->get_params()), [
             'cohorts' => report_filter::get_cohorts($context),
-            'withlearner' => $withlearner,
+            'anonymised' => $anonymised,
             'active' => $filter->is_active(),
         ]);
         if ($form->is_cancelled()) {
@@ -102,10 +106,12 @@ class report_filter_form extends \moodleform {
         }
         if ($data = $form->get_data()) {
             $new = new report_filter();
-            $new->learner = $withlearner ? trim((string) $data->learner) : '';
             $new->cohortid = (int) $data->cohort;
-            $new->from = (int) $data->datefrom;
-            $new->to = (int) $data->dateto;
+            if (!$anonymised) {
+                $new->learner = trim((string) $data->learner);
+                $new->from = (int) $data->datefrom;
+                $new->to = (int) $data->dateto;
+            }
             redirect(new \moodle_url($url, $new->get_params()));
         }
         $form->set_data(['learner' => $filter->learner, 'cohort' => $filter->cohortid, 'datefrom' => $filter->from,

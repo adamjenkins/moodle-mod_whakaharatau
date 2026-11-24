@@ -93,7 +93,7 @@ final class instance_settings {
     /** @var int Built-in smallest number of learners in an anonymised result. */
     const ANONYMOUS_MIN = 5;
     /** @var int Smallest number an administrator may choose. */
-    const ANONYMOUS_LOWEST = 2;
+    const ANONYMOUS_LOWEST = 5;
     /** @var int Largest number an administrator may choose. */
     const ANONYMOUS_HIGHEST = 50;
 

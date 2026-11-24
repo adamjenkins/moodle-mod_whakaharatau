@@ -261,16 +261,95 @@ class report_data {
     }
 
     /**
-     * Whether an anonymised result must be hidden: too few learners, or so few left out by the filters that the
-     * difference from the unfiltered result would show them.
+     * Number of learners as published in an anonymised report: a band as wide as the minimum, so that totals cannot be
+     * subtracted from each other.
+     *
+     * @param int $learners number of learners, at least the minimum
+     * @return array report_table cell, sorted by the band
+     */
+    public static function anonymous_learners(int $learners): array {
+        $min = instance_settings::get_anonymous_minimum();
+        $from = intdiv($learners, $min) * $min;
+        return report_table::cell(get_string('report_band', 'mod_whakaharatau', (object) ['from' => $from,
+            'to' => $from + $min - 1]), $from);
+    }
+
+    /**
+     * A percentage as published in an anonymised report: rounded to 5, with the ends merged. The smaller the result, the
+     * wider the ends, so that "all" and "all but one" cannot be told apart: "all were wrong" would tell about everyone.
+     *
+     * @param float|null $percent 0 to 100, null for none
+     * @param int $learners number of learners it comes from
+     * @return array report_table cell, sorted by the published value
+     */
+    public static function anonymous_percent(?float $percent, int $learners): array {
+        if ($percent === null) {
+            return report_table::cell('', '');
+        }
+        $end = $learners < 10 ? 20 : ($learners < 20 ? 10 : 5);
+        $rounded = (int) (round($percent / 5) * 5);
+        // Decided on the exact value, so that nothing between the last step and the end stands out.
+        if ($percent >= 100 - $end || $rounded >= 100 - $end) {
+            return report_table::cell(get_string('report_ormore', 'mod_whakaharatau', 100 - $end), 100 - $end);
+        }
+        if ($percent <= $end || $rounded <= $end) {
+            return report_table::cell(get_string('report_orless', 'mod_whakaharatau', $end), $end);
+        }
+        return report_table::cell(get_string('percents', 'core', $rounded), $rounded);
+    }
+
+    /**
+     * Fewest learners an anonymised result may come from. Breakdowns that cut across the others (cohorts, months) overlap
+     * them by a few learners, so they need enough for the rounding to cover a learner.
+     *
+     * @param bool $cutsacross whether it is such a breakdown
+     * @return int
+     */
+    public static function get_minimum(bool $cutsacross): int {
+        return instance_settings::get_anonymous_minimum() * ($cutsacross ? 4 : 1);
+    }
+
+    /**
+     * Whether an anonymised result must be hidden: too few learners, or too few left out by the filter.
      *
      * @param int $learners learners in the result
-     * @param int $all learners in the same result without filters
+     * @param int $all learners in the same result without the filter
+     * @param bool $cutsacross whether it is a breakdown that cuts across the others
      * @return bool
      */
-    public static function is_hidden(int $learners, int $all): bool {
-        $min = instance_settings::get_anonymous_minimum();
+    public static function is_hidden(int $learners, int $all, bool $cutsacross = false): bool {
+        $min = self::get_minimum($cutsacross);
         $left = $all - $learners;
         return $learners < $min || ($left > 0 && $left < $min);
+    }
+
+    /**
+     * Totals of results by question, with the versions put together where one of them has too few learners: their separate
+     * results could be subtracted from the question's.
+     *
+     * @param stdClass[] $results get_results()
+     * @param stdClass[] $reference results that decide what is put together, e.g. without the filter
+     * @param int $min fewest learners
+     * @return stdClass[] by "slideid-version", or "slideid-0" for versions put together; see get_totals()
+     */
+    public static function get_anonymous_totals(array $results, array $reference, int $min): array {
+        $merge = [];
+        foreach (self::get_totals($reference) as $total) {
+            if ($total->learners < $min) {
+                $merge[$total->slideid] = true;
+            }
+        }
+        foreach (self::get_totals($results) as $total) {
+            if ($total->learners < $min) {
+                $merge[$total->slideid] = true;
+            }
+        }
+        $merged = [];
+        foreach ($results as $result) {
+            $copy = clone $result;
+            $copy->version = isset($merge[$result->slideid]) ? 0 : $result->version;
+            $merged[] = $copy;
+        }
+        return self::get_totals($merged);
     }
 }

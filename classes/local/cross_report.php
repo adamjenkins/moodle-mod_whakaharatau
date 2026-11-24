@@ -180,10 +180,11 @@ class cross_report {
      *
      * @param string $grouping GROUPINGS key
      * @param report_filter $filter filters
+     * @param int[]|null $ids only these activities
      * @return stdClass[] by group key: label, sort, learners, activities, attempts, percent, firsttry, answered
      */
-    protected function get_groups(string $grouping, report_filter $filter): array {
-        $data = $this->get_data($filter);
+    protected function get_groups(string $grouping, report_filter $filter, ?array $ids = null): array {
+        $data = $this->get_data($filter, $ids);
         $attempts = $data->get_first_attempts();
         $firsttry = [];
         foreach ($data->get_answers($attempts) as $answer) {
@@ -271,7 +272,7 @@ class cross_report {
      * Totals table.
      *
      * @param string $grouping GROUPINGS key
-     * @param bool $anonymised hide results from too few learners
+     * @param bool $anonymised hide results from too few learners and publish only bands and rounded percentages
      * @return report_table
      */
     public function summary(string $grouping, bool $anonymised = false): report_table {
@@ -281,13 +282,25 @@ class cross_report {
             $table->column('course', self::str('crossreport_course'))
                 ->column('category', self::str('crossreport_category'));
         }
-        $table->column('learners', self::str('report_learners'), true)
-            ->column('activities', self::str('modulenameplural'), true)
-            ->column('attempts', self::str('crossreport_firstattempts'), true)
-            ->column('percent', self::str('crossreport_average'), true)
+        $table->column('learners', self::str('report_learners'), true);
+        if (!$anonymised) {
+            $table->column('activities', self::str('modulenameplural'), true)
+                ->column('attempts', self::str('crossreport_firstattempts'), true);
+        }
+        $table->column('percent', self::str('crossreport_average'), true)
             ->column('firsttry', self::str('report_firsttryrate'), true);
-        $groups = $this->get_groups($grouping, $this->filter);
-        $all = $anonymised && $this->filter->is_active() ? $this->get_groups($grouping, new report_filter()) : $groups;
+        // An activity with too few learners is in no anonymised total, so it cannot be subtracted from any.
+        $ids = $anonymised ? $this->get_large_activities() : null;
+        $groups = $this->get_groups($grouping, $this->filter, $ids);
+        $all = $anonymised && $this->filter->is_active() ? $this->get_groups($grouping, new report_filter(), $ids) : $groups;
+        $cutsacross = $this->filter->is_active() || in_array($grouping, ['cohort', 'month', 'quarter'], true);
+        if ($anonymised && $grouping === 'activity') {
+            foreach ($this->get_groups($grouping, new report_filter()) as $key => $group) {
+                if (!isset($all[$key])) {
+                    $all[$key] = $group;
+                }
+            }
+        }
         foreach ($all as $key => $complete) {
             $group = $groups[$key] ?? null;
             if (!$group && !$anonymised) {
@@ -300,11 +313,23 @@ class cross_report {
                 $cells['category'] = report_table::cell($activity->categoryname);
             }
             $learners = $group ? count($group->users) : 0;
-            if ($anonymised && report_data::is_hidden($learners, count($complete->users))) {
+            if ($anonymised && report_data::is_hidden($learners, count($complete->users), $cutsacross)) {
                 $cells['learners'] = report_table::cell(
-                    self::str('report_toofew', instance_settings::get_anonymous_minimum()),
+                    self::str('report_toofew', report_data::get_minimum($cutsacross)),
                     ''
                 );
+            } else if ($anonymised) {
+                $cells += [
+                    'learners' => report_data::anonymous_learners($learners),
+                    'percent' => report_data::anonymous_percent(
+                        $group->scored ? $group->sum / $group->scored : null,
+                        $learners
+                    ),
+                    'firsttry' => report_data::anonymous_percent(
+                        $group->answered ? $group->firsttry / $group->answered * 100 : null,
+                        $learners
+                    ),
+                ];
             } else {
                 $cells += [
                     'learners' => report_table::cell($learners),
@@ -318,6 +343,20 @@ class cross_report {
             $table->add_row($cells);
         }
         return $table->sort_by('label', false);
+    }
+
+    /**
+     * The activities that have enough learners for anonymised results.
+     *
+     * @return int[] activity ids
+     */
+    protected function get_large_activities(): array {
+        $users = [];
+        foreach ($this->get_data(new report_filter())->get_first_attempts() as $attempt) {
+            $users[(int) $attempt->whakaharatauid][(int) $attempt->userid] = true;
+        }
+        $min = report_data::get_minimum(false);
+        return array_keys(array_filter($users, fn($list) => count($list) >= $min));
     }
 
     // Progress.

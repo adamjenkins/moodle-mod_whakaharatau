@@ -41,7 +41,7 @@ require_login($course, false, $cm);
 $attemptmode = optional_param('attemptmode', (int) $instance->mode, PARAM_INT);
 $attemptmode = $attemptmode === instance_settings::MODE_TEST ? instance_settings::MODE_TEST :
     instance_settings::MODE_PRACTICE;
-$filter = report_filter::from_request($context, false);
+$filter = report_filter::from_request($context, true);
 $baseurl = new moodle_url('/mod/whakaharatau/anonymised.php', ['id' => $cm->id, 'attemptmode' => $attemptmode]);
 $url = new moodle_url($baseurl, $filter->get_params());
 $title = get_string('report_anonymised', 'mod_whakaharatau');
@@ -51,7 +51,7 @@ $PAGE->set_title(format_string($instance->name) . ': ' . $title);
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->activityheader->set_attrs(['description' => '', 'hidecompletion' => true]);
 
-$filterform = report_filter_form::handle($baseurl, $context, $filter, false);
+$filterform = report_filter_form::handle($baseurl, $context, $filter, true);
 // Everyone the viewer's groups allow: choosing one group at a time would narrow the results down to a few learners.
 $groupid = groups_get_activity_groupmode($cm) == SEPARATEGROUPS
     && !has_capability('moodle/site:accessallgroups', $context) ? groups_get_activity_group($cm, true) : false;

@@ -276,6 +276,10 @@ final class report_tables_test extends \advanced_testcase {
         $this->assertSame(['1', '1'], $learners(['learner' => (string) $bob->id]));
         $this->assertSame(['0', '0'], $learners(['learner' => '%']));
         $this->assertSame(['1', '1'], $learners(['cohortid' => (int) $cohort->id]));
+        // Attempts open sorted by learner, then attempt.
+        $attempts = $this->tables()->attempts(new report($this->instance, $this->cm, $this->context, 1, false), 1);
+        $this->assertSame(['Ann Test', 'Ann Test', 'Bob Test'], self::col($attempts, 'fullname'));
+        $this->assertSame(['1', '2', '1'], self::col($attempts, 'attempt'));
         // Only Bob's first attempt is in these dates; Ann's second is not a first one.
         $this->assertSame(['1', '1'], $learners(['from' => 1500000]));
         $this->assertSame(['1', '1'], $learners(['to' => 1400000]));
@@ -335,22 +339,165 @@ final class report_tables_test extends \advanced_testcase {
         }
         $table = $this->tables()->anonymised();
         $this->assertSame(['Fewer than 5', 'Fewer than 5'], self::col($table, 'learners'));
-        foreach (['correct', 'correctpercent', 'incorrect', 'firsttry', 'clip1', 'clip2', 'clip3', 'removed'] as $key) {
+        foreach (['correctpercent', 'firsttrypercent', 'clips'] as $key) {
             $this->assertSame(['', ''], self::col($table, $key), $key);
+        }
+        foreach (['correct', 'incorrect', 'firsttry', 'clip1', 'removed'] as $key) {
+            $this->assertArrayNotHasKey($key, $table->get_download_columns(), $key);
         }
         $this->assertArrayNotHasKey('fullname', $table->get_download_columns());
         $this->assertArrayNotHasKey('userid', $table->get_download_columns());
         cohort_add_member($cohort->id, $this->attempt('U4', ['right', 'wrong'])->id);
-        $this->assertSame(['5', '5'], self::col($this->tables()->anonymised(), 'learners'));
+        $this->assertSame(['5–9', '5–9'], self::col($this->tables()->anonymised(), 'learners'));
+        // All right and all wrong look the same as all but one.
+        $this->assertSame(['80% or more', '20% or less'], self::col($this->tables()->anonymised(), 'correctpercent'));
         // One more learner outside the cohort: the cohort's 5 would reveal the sixth by subtraction.
         $this->attempt('U5', ['wrong', 'wrong']);
-        $this->assertSame(['6', '6'], self::col($this->tables()->anonymised(), 'learners'));
+        $this->assertSame(['5–9', '5–9'], self::col($this->tables()->anonymised(), 'learners'));
         $filter = $this->filter(['cohortid' => (int) $cohort->id]);
-        $this->assertSame(['Fewer than 5', 'Fewer than 5'], self::col($this->tables($filter)->anonymised(), 'learners'));
+        $this->assertSame(['Fewer than 20', 'Fewer than 20'], self::col($this->tables($filter)->anonymised(), 'learners'));
         set_config('anonymousmin', 10, 'whakaharatau');
         $this->assertSame(['Fewer than 10', 'Fewer than 10'], self::col($this->tables()->anonymised(), 'learners'));
         set_config('anonymousmin', 1, 'whakaharatau');
-        $this->assertSame(2, instance_settings::get_anonymous_minimum());
+        $this->assertSame(5, instance_settings::get_anonymous_minimum());
+    }
+
+    /**
+     * Published percentages: "all" and "all but one" are never different, nor are "none" and "one"; and the order of a
+     * sorted table tells no more than its text.
+     *
+     * @return void
+     */
+    public function test_anonymous_figures_are_coarse(): void {
+        $this->resetAfterTest();
+        $text = fn(int $count, int $n) => report_data::anonymous_percent($count / $n * 100, $n)['text'];
+        for ($n = 5; $n <= 60; $n++) {
+            $this->assertSame($text($n, $n), $text($n - 1, $n), "$n");
+            $this->assertSame($text(0, $n), $text(1, $n), "$n");
+            $bysort = [];
+            for ($count = 0; $count <= $n; $count++) {
+                $cell = report_data::anonymous_percent($count / $n * 100, $n);
+                $bysort[$cell['sort']][$cell['text']] = true;
+                $this->assertArrayNotHasKey('percent', $cell);
+                $this->assertArrayNotHasKey('download', $cell);
+            }
+            foreach ($bysort as $texts) {
+                $this->assertCount(1, $texts);
+            }
+        }
+        $this->assertSame(['5–9', '5–9', '10–14'], array_map(
+            fn($n) => report_data::anonymous_learners($n)['text'],
+            [5, 9, 10]
+        ));
+        $this->assertSame(
+            report_data::anonymous_learners(5)['sort'],
+            report_data::anonymous_learners(9)['sort']
+        );
+    }
+
+    /**
+     * The attack of the walkthrough of 24 November 2026: the hidden version of a question, from the other questions and the
+     * average of the activity. The versions are put together, so moving answers between them changes nothing published.
+     *
+     * @return void
+     */
+    public function test_hidden_version_cannot_be_worked_out(): void {
+        global $DB;
+        $this->setup_activity();
+        $users = [];
+        foreach (['rw', 'rr', 'wr', 'rw', 'wr', 'rw'] as $i => $pattern) {
+            $users[] = $this->attempt("U$i", array_map(fn($c) => $c === 'r' ? 'right' : 'wrong', str_split($pattern)));
+        }
+        $id = (int) $this->slides[0]->id;
+        $DB->set_field('whakaharatau_slide', 'alttext', 'Better picture', ['id' => $id]);
+        versions::sync($this->context, $id);
+        $right = $this->attempt('V0', ['right', 'right']);
+        $this->attempt('V1', ['right', 'right']);
+        $before = $this->get_published();
+        $this->assertSame(['All', '1'], array_column($before[0], 'version'));
+        $this->assertSame(['Better picture', 'Picture 1'], array_column($before[0], 'description'));
+        $this->assertSame(['5–9', '5–9'], array_column($before[0], 'learners'));
+        // Someone right in version 1 and someone wrong in version 2, instead of the other way round.
+        $set = function (stdClass $user, int $version) use ($DB, $id): void {
+            $attemptid = $DB->get_field('whakaharatau_attempt', 'id', ['userid' => $user->id]);
+            $DB->set_field('whakaharatau_response', 'version', $version, ['attemptid' => $attemptid, 'slideid' => $id]);
+        };
+        $set($right, 1);
+        $set($users[2], 2);
+        $this->assertSame($before, $this->get_published());
+    }
+
+    /**
+     * An activity with few learners changes no anonymised figure but its own row, which is hidden.
+     *
+     * @return void
+     */
+    public function test_small_activity_is_in_no_total(): void {
+        $this->setup_activity();
+        for ($i = 0; $i < 6; $i++) {
+            $this->attempt("U$i", ['right', 'wrong']);
+        }
+        $before = $this->get_published();
+        [$small] = $this->add_activity('Small');
+        $user = $this->attempt('Z', ['right', 'right'], 0, null, $small);
+        $hidden = $this->get_published();
+        $this->assertSame(['One', 'Small'], array_column($hidden['activity'], 'label'));
+        $this->assertSame(['5–9', 'Fewer than 5'], array_column($hidden['activity'], 'learners'));
+        foreach (['course', 'category', 'cohort', 'month', 'quarter'] as $grouping) {
+            $this->assertSame($before[$grouping], $hidden[$grouping], $grouping);
+        }
+        $this->assertSame(['Fewer than 20'], array_column($hidden['month'], 'learners'));
+        // Whatever the learner answered, everything published is the same.
+        attempt::delete_all_attempts((int) $small->id, (int) $user->id);
+        $this->attempt('', ['wrong', 'wrong'], 0, $user, $small);
+        $this->assertSame($hidden, $this->get_published());
+    }
+
+    /**
+     * A question few learners met is hidden with the next smallest one, so the total does not give it away.
+     *
+     * @return void
+     */
+    public function test_small_question_hides_another(): void {
+        $this->setup_activity();
+        for ($i = 0; $i < 6; $i++) {
+            $this->attempt("U$i", ['right', 'wrong']);
+        }
+        $this->modgen()->create_slide(['whakaharatauid' => $this->instance->id, 'options' => 3, 'correct' => 1]);
+        $this->attempt('V', ['right', 'right', 'right']);
+        $this->assertSame(
+            ['Fewer than 5', '5–9', 'Fewer than 5'],
+            self::col($this->tables()->anonymised(), 'learners')
+        );
+    }
+
+    /**
+     * Everything the anonymised reports publish: the questions (0) and the totals by each grouping.
+     *
+     * @return array
+     */
+    private function get_published(): array {
+        $rows = [$this->tables()->anonymised()->get_download_rows()];
+        $context = \context_course::instance($this->course->id);
+        foreach (array_keys(cross_report::GROUPINGS) as $grouping) {
+            $rows[$grouping] = (new cross_report($context, new report_filter(), true))->summary($grouping, true)
+                ->get_download_rows();
+        }
+        return $rows;
+    }
+
+    /**
+     * Anonymised reports take only the cohort from the URL.
+     *
+     * @return void
+     */
+    public function test_anonymised_filters_from_url(): void {
+        $this->setup_activity();
+        $_GET['learner'] = 'ann';
+        $_GET['from'] = '1000';
+        $_GET['to'] = '2000';
+        $this->assertFalse(report_filter::from_request($this->context, true)->is_active());
+        $this->assertCount(3, report_filter::from_request($this->context)->get_params());
     }
 
     /**
@@ -409,6 +556,10 @@ final class report_tables_test extends \advanced_testcase {
         $this->assertSame(['3'], self::col($report->summary('category'), 'learners'));
         $this->assertSame(['Fewer than 5', 'Fewer than 5'], self::col($report->summary('activity', true), 'learners'));
         $this->assertSame(['', ''], self::col($report->summary('activity', true), 'percent'));
+        $this->assertSame(
+            ['label', 'course', 'category', 'learners', 'percent', 'firsttry'],
+            array_keys($report->summary('activity', true)->get_download_columns())
+        );
 
         $progress = $report->progress();
         $this->assertSame([(string) $ann->id, (string) $bob->id, (string) $cat->id], self::col($progress, 'userid'));

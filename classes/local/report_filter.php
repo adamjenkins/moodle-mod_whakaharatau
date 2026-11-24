@@ -40,14 +40,17 @@ class report_filter {
      * Read the filters of this request.
      *
      * @param context $context context of the report, for the cohorts the viewer may see
-     * @param bool $withlearner false leaves the learner filter out (anonymised reports)
+     * @param bool $anonymised only the cohort filter: dates or learners could be moved one person at a time
      * @return self
      */
-    public static function from_request(context $context, bool $withlearner = true): self {
+    public static function from_request(context $context, bool $anonymised = false): self {
         $filter = new self();
-        $filter->learner = $withlearner ? trim(optional_param('learner', '', PARAM_TEXT)) : '';
         $cohortid = optional_param('cohort', 0, PARAM_INT);
         $filter->cohortid = isset(self::get_cohorts($context)[$cohortid]) ? $cohortid : 0;
+        if ($anonymised) {
+            return $filter;
+        }
+        $filter->learner = trim(optional_param('learner', '', PARAM_TEXT));
         $filter->from = max(0, optional_param('from', 0, PARAM_INT));
         $filter->to = max(0, optional_param('to', 0, PARAM_INT));
         return $filter;

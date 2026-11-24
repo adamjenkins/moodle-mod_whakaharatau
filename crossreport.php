@@ -69,7 +69,7 @@ if (!isset(cross_report::GROUPINGS[$grouping])) {
 $pre = optional_param('pre', 0, PARAM_INT);
 $post = optional_param('post', 0, PARAM_INT);
 
-$filter = report_filter::from_request($context, !$anonymised);
+$filter = report_filter::from_request($context, $anonymised);
 $scopeurl = cross_report::get_url($context);
 $baseurl = new moodle_url($scopeurl, ['view' => $view]);
 if ($view === cross_report::VIEW_SUMMARY || $anonymised) {
@@ -83,9 +83,10 @@ $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('report');
 $PAGE->set_title($title);
-$PAGE->set_heading($context->get_context_name(false));
+$PAGE->set_heading($context->contextlevel == CONTEXT_SYSTEM ? format_string($SITE->fullname) :
+    $context->get_context_name(false));
 
-$filterform = report_filter_form::handle($baseurl, $context, $filter, !$anonymised);
+$filterform = report_filter_form::handle($baseurl, $context, $filter, $anonymised);
 $report = new cross_report($context, $filter, $anonymised);
 $summary = null;
 switch ($view) {
