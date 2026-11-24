@@ -42,11 +42,11 @@ final class page_access_test extends \advanced_testcase {
         $cases = [];
         $expected = [
             'student' => [page_access::EDIT => false, page_access::IMPORT => false, page_access::EXPORT => false,
-                page_access::REPORT => false, page_access::DELETE_ATTEMPTS => false],
+                page_access::REPORT => false, page_access::DELETE_ATTEMPTS => false, page_access::ANONYMISED => false],
             'teacher' => [page_access::EDIT => false, page_access::IMPORT => false, page_access::EXPORT => false,
-                page_access::REPORT => true, page_access::DELETE_ATTEMPTS => false],
+                page_access::REPORT => true, page_access::DELETE_ATTEMPTS => false, page_access::ANONYMISED => false],
             'editingteacher' => [page_access::EDIT => true, page_access::IMPORT => true, page_access::EXPORT => true,
-                page_access::REPORT => true, page_access::DELETE_ATTEMPTS => true],
+                page_access::REPORT => true, page_access::DELETE_ATTEMPTS => true, page_access::ANONYMISED => true],
         ];
         foreach ($expected as $role => $pages) {
             foreach ($pages as $page => $allowed) {

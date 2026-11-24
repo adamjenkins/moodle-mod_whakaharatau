@@ -15,38 +15,50 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Teacher report: attempts per learner (Test) or practice sessions (Practice), per-slide difficulty,
- * download and deleting attempts.
+ * Teacher report: attempts (with deleting), learners, individual answers, questions and versions of changed questions.
+ * Every table can be sorted, filtered and downloaded.
  *
  * @package    mod_whakaharatau
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_whakaharatau\form\report_filter_form;
+use mod_whakaharatau\local\activity_tables;
 use mod_whakaharatau\local\instance_settings;
 use mod_whakaharatau\local\page_access;
 use mod_whakaharatau\local\report;
+use mod_whakaharatau\local\report_filter;
+use mod_whakaharatau\output\report_page;
 
 require(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/whakaharatau/lib.php');
 
 $id = required_param('id', PARAM_INT);
 $view = optional_param('mode', report::VIEW_ATTEMPTS, PARAM_ALPHA);
-$download = optional_param('download', '', PARAM_ALPHA);
 $action = optional_param('action', '', PARAM_ALPHA);
 
 [$course, $cm] = get_course_and_cm_from_cmid($id, 'whakaharatau');
 require_login($course, false, $cm);
 [$instance, $context] = page_access::require_page(page_access::REPORT, $cm);
 
-if ($view !== report::VIEW_SLIDES) {
+$views = [
+    report::VIEW_ATTEMPTS => get_string('report_viewattempts', 'mod_whakaharatau'),
+    report::VIEW_LEARNERS => get_string('report_viewlearners', 'mod_whakaharatau'),
+    report::VIEW_ANSWERS => get_string('report_viewanswers', 'mod_whakaharatau'),
+    report::VIEW_SLIDES => get_string('report_viewslides', 'mod_whakaharatau'),
+    report::VIEW_VERSIONS => get_string('report_viewversions', 'mod_whakaharatau'),
+];
+if (!isset($views[$view])) {
     $view = report::VIEW_ATTEMPTS;
 }
 $attemptmode = optional_param('attemptmode', (int) $instance->mode, PARAM_INT);
 $attemptmode = $attemptmode === instance_settings::MODE_TEST ? instance_settings::MODE_TEST :
     instance_settings::MODE_PRACTICE;
 
-$url = new moodle_url('/mod/whakaharatau/report.php', ['id' => $cm->id, 'mode' => $view, 'attemptmode' => $attemptmode]);
+$filter = report_filter::from_request($context);
+$baseurl = new moodle_url('/mod/whakaharatau/report.php', ['id' => $cm->id, 'mode' => $view, 'attemptmode' => $attemptmode]);
+$url = new moodle_url($baseurl, $filter->get_params());
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('incourse');
 $PAGE->set_title(format_string($instance->name) . ': ' . get_string('report', 'mod_whakaharatau'));
@@ -99,99 +111,72 @@ if ($action === 'delete') {
     exit;
 }
 
-// Download through \core\dataformat.
-if ($download !== '') {
-    $filename = clean_filename(format_string($instance->name, true, ['context' => $context]) . '-' .
-        get_string($view === report::VIEW_SLIDES ? 'report_viewslides' : 'report_viewattempts', 'mod_whakaharatau'));
-    if ($view === report::VIEW_SLIDES) {
-        $columns = report::get_slide_columns();
-        $rows = array_map(fn($row) => report::format_slide_row($row), $report->get_slide_stats());
-    } else {
-        $columns = $report->get_attempt_columns();
-        $rows = array_map(fn($row) => $report->format_attempt_row($row), array_values($report->get_attempts()));
-    }
-    \core\dataformat::download_data($filename, $download, $columns, new ArrayIterator($rows));
-    exit;
-}
+$filterform = report_filter_form::handle($baseurl, $context, $filter);
 
-/** @var core_renderer $output */
-$output = $PAGE->get_renderer('core');
-
-// The view switch: Learners / Slides, and Test attempts / Practice sessions.
-$nav = ['views' => [], 'modes' => []];
-foreach ([report::VIEW_ATTEMPTS => 'report_viewattempts', report::VIEW_SLIDES => 'report_viewslides'] as $key => $str) {
-    $nav['views'][] = [
-        'url' => (new moodle_url($url, ['mode' => $key]))->out(false),
-        'label' => get_string($str, 'mod_whakaharatau'),
-        'active' => $key === $view,
-    ];
+$tables = new activity_tables($instance, $cm, $context, $report, $filter);
+switch ($view) {
+    case report::VIEW_LEARNERS:
+        $table = $tables->learners(new moodle_url($url, ['mode' => report::VIEW_ANSWERS]));
+        break;
+    case report::VIEW_ANSWERS:
+        $table = $tables->answers();
+        break;
+    case report::VIEW_SLIDES:
+        $table = $tables->questions();
+        break;
+    case report::VIEW_VERSIONS:
+        $table = $tables->versions();
+        break;
+    default:
+        $table = $tables->attempts($report, (int) $course->id);
 }
-$modelabels = [
-    instance_settings::MODE_TEST => 'report_modetest',
-    instance_settings::MODE_PRACTICE => 'report_modepractice',
-];
-foreach ($modelabels as $key => $str) {
-    $nav['modes'][] = [
-        'url' => (new moodle_url($url, ['attemptmode' => $key]))->out(false),
-        'label' => get_string($str, 'mod_whakaharatau'),
-        'active' => $key === $attemptmode,
-    ];
-}
+$sort = report_page::prepare($table, format_string($instance->name, true, ['context' => $context, 'escape' => false]) .
+    '-' . $views[$view]);
 
-$templatecontext = [
-    'cmid' => (int) $cm->id,
-    'cansee' => $report->can_see_any(),
-    'istest' => $attemptmode === instance_settings::MODE_TEST,
+$nav = [
+    'views' => report_page::links($url, 'mode', $views, $view),
+    'modes' => report_page::links($url, 'attemptmode', [
+        instance_settings::MODE_TEST => get_string('report_modetest', 'mod_whakaharatau'),
+        instance_settings::MODE_PRACTICE => get_string('report_modepractice', 'mod_whakaharatau'),
+    ], $attemptmode),
 ];
 
-if ($view === report::VIEW_SLIDES) {
-    $rows = [];
-    foreach ($report->get_slide_stats() as $row) {
-        $cells = report::format_slide_row($row);
-        $rows[] = $cells + [
-            'imageurl' => $row['imageurl'] ? $row['imageurl']->out(false) : '',
-            'decorative' => $row['decorative'],
-            'hasdata' => $row['appearances'] > 0,
-            'percentvalue' => $row['percent'] === null ? 0 : $row['percent'],
-        ];
-    }
-    $templatecontext += ['rows' => $rows, 'hasrows' => !empty($rows)];
-    $template = 'mod_whakaharatau/report_slides';
-} else {
-    $rows = [];
-    $lastuser = 0;
-    foreach ($report->get_attempts() as $row) {
-        $cells = $report->format_attempt_row($row);
-        $rows[] = $cells + [
-            'attemptid' => (int) $row->id,
-            'profileurl' => (new moodle_url('/user/view.php', ['id' => $row->userid, 'course' => $course->id]))->out(false),
-            'firstofuser' => (int) $row->userid !== $lastuser,
-        ];
-        $lastuser = (int) $row->userid;
-    }
-    $templatecontext += [
-        'rows' => $rows,
-        'hasrows' => !empty($rows),
-        'candelete' => $candelete && !empty($rows),
+// Text above the table, and what an empty table says.
+$istest = $attemptmode === instance_settings::MODE_TEST;
+$notes = [
+    report::VIEW_LEARNERS => $istest ? 'report_notelearners' : 'report_notefirstpractice',
+    report::VIEW_SLIDES => $istest ? 'report_notefirsttest' : 'report_notefirstpractice',
+    report::VIEW_VERSIONS => $istest ? 'report_noteversionstest' : 'report_noteversionspractice',
+];
+$empty = [
+    report::VIEW_SLIDES => 'report_noslides',
+    report::VIEW_VERSIONS => 'report_noversions',
+];
+$extra = [
+    'emptytext' => get_string(
+        $report->can_see_any() ? $empty[$view] ?? ($filter->is_active() ? 'report_nomatch' : 'report_noattempts')
+            : 'report_notingroup',
+        'mod_whakaharatau'
+    ),
+];
+if ($view === report::VIEW_ATTEMPTS && $candelete && $table->count_rows()) {
+    $extra += [
+        'select' => true,
         'formaction' => (new moodle_url('/mod/whakaharatau/report.php'))->out(false),
+        'cmid' => (int) $cm->id,
         'sesskey' => sesskey(),
         'mode' => $view,
         'attemptmode' => $attemptmode,
     ];
-    $template = 'mod_whakaharatau/report_attempts';
 }
 
-echo $output->header();
-echo $output->heading(get_string('report', 'mod_whakaharatau'), 2);
+echo $OUTPUT->header();
+echo $OUTPUT->heading(get_string('report', 'mod_whakaharatau'), 2);
 groups_print_activity_menu($cm, $url);
-echo $output->render_from_template('mod_whakaharatau/report_nav', $nav);
-echo $output->render_from_template($template, $templatecontext);
-if (!empty($rows) && $report->can_see_any()) {
-    echo $output->download_dataformat_selector(
-        get_string('report_download', 'mod_whakaharatau'),
-        new moodle_url('/mod/whakaharatau/report.php'),
-        'download',
-        ['id' => $cm->id, 'mode' => $view, 'attemptmode' => $attemptmode]
-    );
+echo $OUTPUT->render_from_template('mod_whakaharatau/report_nav', $nav);
+$filterform->display();
+if (isset($notes[$view])) {
+    echo html_writer::tag('p', get_string($notes[$view], 'mod_whakaharatau'), ['class' => 'text-muted']);
 }
-echo $output->footer();
+echo report_page::render($table, $url, $sort, $extra);
+echo $OUTPUT->footer();

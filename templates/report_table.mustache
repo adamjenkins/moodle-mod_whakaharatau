@@ -1,0 +1,102 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_whakaharatau/report_table
+
+    A report table. Every heading is a link that sorts by its column. With select, each row has a checkbox and the
+    table is in a form that deletes the selected attempts.
+
+    Context variables required for this template:
+    * caption - read by screen readers
+    * hasrows, emptytext - whether there are rows, and what is shown when not
+    * columns - list of: label, url, numeric, ariasort (none, ascending or descending), asc, desc
+    * rows - list of: id, label, cells (list of: text, url, imageurl, hasbar, percent, audios, head, numeric)
+    * select, formaction, cmid, sesskey, mode, attemptmode - for deleting attempts
+
+    Example context (json):
+    {
+        "caption": "Learners",
+        "hasrows": true,
+        "emptytext": "",
+        "select": false,
+        "columns": [
+            {"label": "Learner", "url": "https://example.com/?tsort=fullname", "numeric": false, "ariasort": "ascending", "asc": true, "desc": false},
+            {"label": "Score", "url": "https://example.com/?tsort=score", "numeric": true, "ariasort": "none", "asc": false, "desc": false}
+        ],
+        "rows": [
+            {"id": 0, "label": "Aroha Ngata", "cells": [
+                {"text": "Aroha Ngata", "url": "https://example.com/", "imageurl": "", "hasbar": false, "percent": 0, "audios": [], "head": true, "numeric": false},
+                {"text": "75%", "url": "", "imageurl": "", "hasbar": true, "percent": 75, "audios": [{"label": "Clip 1", "url": "https://example.com/a.mp3"}], "head": false, "numeric": true}
+            ]}
+        ]
+    }
+}}
+<div class="mod-whakaharatau-report">
+    {{^hasrows}}
+    <p class="alert alert-info">{{emptytext}}</p>
+    {{/hasrows}}
+    {{#hasrows}}
+    {{#select}}
+    <form method="post" action="{{formaction}}" id="mod-whakaharatau-report-form-{{cmid}}">
+        <input type="hidden" name="id" value="{{cmid}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="mode" value="{{mode}}">
+        <input type="hidden" name="attemptmode" value="{{attemptmode}}">
+        <input type="hidden" name="action" value="delete">
+    {{/select}}
+        <div class="table-responsive">
+            <table class="table table-striped generaltable">
+                <caption class="visually-hidden">{{caption}}</caption>
+                <thead>
+                    <tr>
+                        {{#select}}<th scope="col"><span class="visually-hidden">{{#str}} report_select, mod_whakaharatau {{/str}}</span></th>{{/select}}
+                        {{#columns}}
+                        <th scope="col" aria-sort="{{ariasort}}"{{#numeric}} class="text-end"{{/numeric}}>
+                            <a href="{{url}}">{{label}}{{#asc}} <span aria-hidden="true">&#9650;</span>{{/asc}}{{#desc}} <span aria-hidden="true">&#9660;</span>{{/desc}}</a>
+                        </th>
+                        {{/columns}}
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#rows}}
+                    <tr>
+                        {{#select}}
+                        <td>
+                            <input type="checkbox" class="form-check-input" name="attemptid[]" value="{{id}}" id="mod-whakaharatau-attempt-{{id}}">
+                            <label class="visually-hidden" for="mod-whakaharatau-attempt-{{id}}">{{#str}} report_selectrow, mod_whakaharatau, {{label}} {{/str}}</label>
+                        </td>
+                        {{/select}}
+                        {{#cells}}
+                        {{#head}}<th scope="row"{{#numeric}} class="text-end"{{/numeric}}>{{/head}}{{^head}}<td class="{{#numeric}}text-end{{/numeric}}{{^numeric}}mod-whakaharatau-report-text{{/numeric}}">{{/head}}
+                            {{! The text is beside the picture, so the picture itself is not announced. }}
+                            {{#imageurl}}<img src="{{imageurl}}" alt="" class="img-thumbnail mod-whakaharatau-report-thumb" loading="lazy">{{/imageurl}}
+                            {{#url}}<a href="{{url}}">{{text}}</a>{{/url}}{{^url}}{{text}}{{/url}}
+                            {{#hasbar}}<div class="progress mt-1 mod-whakaharatau-report-progress" aria-hidden="true"><div class="progress-bar" style="width: {{percent}}%;"></div></div>{{/hasbar}}
+                            {{#audios}}<div class="mod-whakaharatau-report-audio"><span class="small">{{label}}</span><audio controls preload="none" src="{{url}}" aria-label="{{label}}"></audio></div>{{/audios}}
+                        {{#head}}</th>{{/head}}{{^head}}</td>{{/head}}
+                        {{/cells}}
+                    </tr>
+                    {{/rows}}
+                </tbody>
+            </table>
+        </div>
+    {{#select}}
+        <button type="submit" class="btn btn-danger">{{#str}} deleteselected, mod_whakaharatau {{/str}}</button>
+    </form>
+    {{/select}}
+    {{/hasrows}}
+</div>

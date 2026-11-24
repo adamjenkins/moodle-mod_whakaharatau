@@ -17,25 +17,37 @@
 {{!
     @template mod_whakaharatau/report_nav
 
-    The view switch of the teacher report: Learners or Slides, and Test attempts or Practice sessions.
+    The switches above a report. Each list is optional.
 
     Context variables required for this template:
-    * views - list of {url, label, active}
-    * modes - list of {url, label, active}
+    * scopes, views, modes, groupings - lists of url, label and active
 
     Example context (json):
     {
+        "scopes": [],
         "views": [
-            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=attempts", "label": "Learners", "active": true},
-            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=slides", "label": "Slides", "active": false}
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=attempts", "label": "Attempts", "active": true},
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&mode=slides", "label": "Questions", "active": false}
         ],
         "modes": [
-            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&attemptmode=1", "label": "Test attempts", "active": false},
-            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&attemptmode=0", "label": "Practice sessions", "active": true}
-        ]
+            {"url": "https://example.com/mod/whakaharatau/report.php?id=1&attemptmode=1", "label": "Test attempts", "active": true}
+        ],
+        "groupings": []
     }
 }}
 <div class="mod-whakaharatau-report-nav d-flex flex-wrap gap-3 mb-3">
+    {{#scopes.0}}
+    <nav aria-label="{{#str}} crossreport_scope, mod_whakaharatau {{/str}}">
+        <ul class="nav nav-pills">
+            {{#scopes}}
+            <li class="nav-item">
+                <a class="nav-link{{#active}} active{{/active}}" href="{{url}}"{{#active}} aria-current="true"{{/active}}>{{label}}</a>
+            </li>
+            {{/scopes}}
+        </ul>
+    </nav>
+    {{/scopes.0}}
+    {{#views.0}}
     <nav aria-label="{{#str}} report_viewlabel, mod_whakaharatau {{/str}}">
         <ul class="nav nav-pills">
             {{#views}}
@@ -45,6 +57,8 @@
             {{/views}}
         </ul>
     </nav>
+    {{/views.0}}
+    {{#modes.0}}
     <nav aria-label="{{#str}} report_modelabel, mod_whakaharatau {{/str}}">
         <ul class="nav nav-pills">
             {{#modes}}
@@ -54,4 +68,16 @@
             {{/modes}}
         </ul>
     </nav>
+    {{/modes.0}}
+    {{#groupings.0}}
+    <nav aria-label="{{#str}} crossreport_groupby, mod_whakaharatau {{/str}}">
+        <ul class="nav nav-pills">
+            {{#groupings}}
+            <li class="nav-item">
+                <a class="nav-link{{#active}} active{{/active}}" href="{{url}}"{{#active}} aria-current="true"{{/active}}>{{label}}</a>
+            </li>
+            {{/groupings}}
+        </ul>
+    </nav>
+    {{/groupings.0}}
 </div>

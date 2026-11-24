@@ -72,6 +72,7 @@ class provider implements
             'optionid' => 'privacy:metadata:response:optionid',
             'correct' => 'privacy:metadata:response:correct',
             'tries' => 'privacy:metadata:response:tries',
+            'version' => 'privacy:metadata:response:version',
             'timeanswered' => 'privacy:metadata:response:timeanswered',
         ], 'privacy:metadata:response');
 
@@ -154,6 +155,7 @@ class provider implements
                         'option' => $optionnumbers[(int) $row->optionid] ?? null,
                         'correct' => transform::yesno($row->correct),
                         'try' => (int) $row->tries,
+                        'version' => (int) $row->version,
                         'timeanswered' => transform::datetime($row->timeanswered),
                     ];
                 }

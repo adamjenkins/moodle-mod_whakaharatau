@@ -90,6 +90,13 @@ final class instance_settings {
     /** @var int Built-in fade of the bottom edge when the picture is stacked above the options, in percent. */
     const FADE_STACKED = 10;
 
+    /** @var int Built-in smallest number of learners in an anonymised result. */
+    const ANONYMOUS_MIN = 5;
+    /** @var int Smallest number an administrator may choose. */
+    const ANONYMOUS_LOWEST = 2;
+    /** @var int Largest number an administrator may choose. */
+    const ANONYMOUS_HIGHEST = 50;
+
     /** @var string[] Names of the settings that have a site default in settings.php and a mod_form element. */
     const DEFAULTABLE = [
         'mode', 'shuffle', 'repeatmode', 'optionorder', 'showprogress', 'displayinline', 'feedbackmode',
@@ -125,6 +132,16 @@ final class instance_settings {
             'coverfade' => 1,
             'coverfadewidth' => self::FADE_WIDTH,
         ];
+    }
+
+    /**
+     * Smallest number of learners a result in an anonymised report may come from.
+     *
+     * @return int
+     */
+    public static function get_anonymous_minimum(): int {
+        $min = (int) get_config('whakaharatau', 'anonymousmin') ?: self::ANONYMOUS_MIN;
+        return max(self::ANONYMOUS_LOWEST, min(self::ANONYMOUS_HIGHEST, $min));
     }
 
     /**

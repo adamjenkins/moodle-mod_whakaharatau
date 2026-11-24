@@ -443,6 +443,7 @@ class Player {
         this.result = null;
         this.current = {
             slideid: data.slideid,
+            version: data.version,
             finished: slidestate.finished,
             labels,
             options: new Map(slidestate.options.map((option) => [option.optionid, option.state])),
@@ -523,6 +524,7 @@ class Player {
             attemptid: this.state.attemptid,
             slideid: this.current.slideid,
             optionid: optionid,
+            version: this.current.version,
         });
         this.result = response;
         if (response.newround) {

@@ -93,4 +93,12 @@ if ($ADMIN->fulltree) {
         instance_settings::FADE_STACKED,
         instance_settings::get_fade_choices()
     ));
+    $minimums = range(instance_settings::ANONYMOUS_LOWEST, instance_settings::ANONYMOUS_HIGHEST);
+    $settings->add(new admin_setting_configselect(
+        'whakaharatau/anonymousmin',
+        new lang_string('anonymousmin', 'mod_whakaharatau'),
+        new lang_string('anonymousmin_help', 'mod_whakaharatau'),
+        instance_settings::ANONYMOUS_MIN,
+        array_combine($minimums, $minimums)
+    ));
 }

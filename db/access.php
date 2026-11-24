@@ -73,6 +73,27 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // Question results without learners, for people who should not see individual results.
+    'mod/whakaharatau:exportanonymised' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // The reports across the activities of a course, or of a category or the site for whoever has it there. Each
+    // activity is included only where the viewer also has viewreports (or exportanonymised, for anonymised results).
+    'mod/whakaharatau:viewcrossreports' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
     'mod/whakaharatau:deleteattempts' => [
         'riskbitmask' => RISK_DATALOSS,
         'captype' => 'write',

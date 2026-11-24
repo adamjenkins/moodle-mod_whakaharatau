@@ -24,6 +24,7 @@ use context_module;
 use context_user;
 use mod_whakaharatau\local\instance_settings;
 use mod_whakaharatau\local\slides;
+use mod_whakaharatau\local\versions;
 use moodle_exception;
 use stdClass;
 
@@ -409,6 +410,7 @@ class slide_form extends \moodleform {
                 throw new moodle_exception('errorslidenotinactivity', 'mod_whakaharatau');
             }
             $fields->id = $slideid;
+            versions::ensure($context, $slideid);
             slides::update_slide($fields);
         } else {
             $slideid = slides::create_slide((int) $instance->id, $fields);
@@ -457,6 +459,7 @@ class slide_form extends \moodleform {
             $DB->set_field('whakaharatau_option', 'iscorrect', 0, ['slideid' => $slideid]);
         }
 
+        versions::sync($context, $slideid);
         $transaction->allow_commit();
         return $slideid;
     }

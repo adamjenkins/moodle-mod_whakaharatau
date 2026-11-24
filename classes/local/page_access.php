@@ -43,12 +43,16 @@ class page_access {
     /** @var string Deleting attempts from the report. */
     const DELETE_ATTEMPTS = 'deleteattempts';
 
+    /** @var string Anonymised export (anonymised.php). */
+    const ANONYMISED = 'anonymised';
+
     /** @var string[][] page => the capabilities it needs, all of them. */
     const CAPABILITIES = [
         self::EDIT => ['mod/whakaharatau:manage'],
         self::IMPORT => ['mod/whakaharatau:manage'],
         self::EXPORT => ['mod/whakaharatau:manage'],
         self::REPORT => ['mod/whakaharatau:viewreports'],
+        self::ANONYMISED => ['mod/whakaharatau:exportanonymised'],
         self::DELETE_ATTEMPTS => ['mod/whakaharatau:viewreports', 'mod/whakaharatau:deleteattempts'],
     ];
 

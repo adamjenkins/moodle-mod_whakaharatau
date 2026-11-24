@@ -21,8 +21,8 @@ use context_module;
 use stdClass;
 
 /**
- * Queries behind the teacher report: attempts per learner and per-slide difficulty, limited to the groups
- * the viewer may see.
+ * The attempts of the teacher report and deleting them, limited to the groups the viewer may see. The other views are
+ * in activity_tables.
  *
  * Callers check mod/whakaharatau:viewreports (and mod/whakaharatau:deleteattempts before delete_attempts()).
  *
@@ -33,8 +33,14 @@ use stdClass;
 class report {
     /** @var string report view: one row per attempt or session */
     const VIEW_ATTEMPTS = 'attempts';
-    /** @var string report view: one row per slide */
+    /** @var string report view: one row per question */
     const VIEW_SLIDES = 'slides';
+    /** @var string report view: one row per learner */
+    const VIEW_LEARNERS = 'learners';
+    /** @var string report view: one row per answer */
+    const VIEW_ANSWERS = 'answers';
+    /** @var string report view: versions of changed questions */
+    const VIEW_VERSIONS = 'versions';
 
     /** @var stdClass the whakaharatau record */
     protected $instance;
@@ -82,6 +88,18 @@ class report {
      */
     public function get_attemptmode(): int {
         return $this->attemptmode;
+    }
+
+    /**
+     * Groups the report is limited to.
+     *
+     * @return int[]|null null = everyone, empty = nobody
+     */
+    public function get_groupids(): ?array {
+        if (!$this->canseeany) {
+            return [];
+        }
+        return $this->groupid ? [$this->groupid] : null;
     }
 
     /**
@@ -187,55 +205,6 @@ class report {
     }
 
     /**
-     * Per-slide difficulty: how often each slide was answered right on the first try.
-     *
-     * Counts every appearance of a slide (Practice rounds included) in the attempts of the shown mode.
-     *
-     * @return array list of: slideid, number (1-based, teacher order), alttext, decorative, imageurl
-     *      (moodle_url|null), appearances (first choices made), firsttry (right first time), percent (float|null),
-     *      choices (all choices made)
-     */
-    public function get_slide_stats(): array {
-        global $DB;
-        $slides = slides::get_slides((int) $this->instance->id);
-        $stats = [];
-        if ($this->canseeany && $slides) {
-            [$groupjoin, $groupparams] = $this->group_join();
-            $sql = "SELECT r.slideid,
-                           SUM(CASE WHEN r.tries = 1 THEN 1 ELSE 0 END) AS appearances,
-                           SUM(CASE WHEN r.tries = 1 AND r.correct = 1 THEN 1 ELSE 0 END) AS firsttry,
-                           COUNT(1) AS choices
-                      FROM {whakaharatau_response} r
-                      JOIN {whakaharatau_attempt} a ON a.id = r.attemptid
-                      JOIN {user} u ON u.id = a.userid AND u.deleted = 0
-                           $groupjoin
-                     WHERE a.whakaharatauid = :wid AND a.mode = :mode
-                  GROUP BY r.slideid";
-            $stats = $DB->get_records_sql($sql, ['wid' => $this->instance->id, 'mode' => $this->attemptmode] +
-                $groupparams);
-        }
-        $rows = [];
-        $number = 0;
-        foreach ($slides as $slide) {
-            $stat = $stats[$slide->id] ?? null;
-            $appearances = $stat ? (int) $stat->appearances : 0;
-            $firsttry = $stat ? (int) $stat->firsttry : 0;
-            $rows[] = [
-                'slideid' => (int) $slide->id,
-                'number' => ++$number,
-                'alttext' => (string) $slide->alttext,
-                'decorative' => !empty($slide->decorative),
-                'imageurl' => slides::get_file_url($this->context, slides::AREA_IMAGE, (int) $slide->id),
-                'appearances' => $appearances,
-                'firsttry' => $firsttry,
-                'percent' => $appearances ? round($firsttry / $appearances * 100, 1) : null,
-                'choices' => $stat ? (int) $stat->choices : 0,
-            ];
-        }
-        return $rows;
-    }
-
-    /**
      * Column keys and headings of the attempts view (also the download columns).
      *
      * @return string[] key => plain-text heading
@@ -308,40 +277,6 @@ class report {
             format_float($row->firsttry / $row->slidesanswered * 100, 1, true, true) . '%' : '';
         $cells['beststreak'] = (string) (int) $row->beststreak;
         return $cells;
-    }
-
-    /**
-     * Column keys and headings of the slides view (also the download columns).
-     *
-     * @return string[] key => plain-text heading
-     */
-    public static function get_slide_columns(): array {
-        $str = fn(string $key) => get_string($key, 'mod_whakaharatau');
-        return [
-            'number' => $str('report_slide'),
-            'alttext' => $str('report_alttext'),
-            'appearances' => $str('report_appearances'),
-            'firsttry' => $str('report_firsttry'),
-            'percent' => $str('report_percentfirsttry'),
-            'choices' => $str('report_choices'),
-        ];
-    }
-
-    /**
-     * One slide's statistics as plain-text cell values keyed like get_slide_columns() (not escaped).
-     *
-     * @param array $row a get_slide_stats() row
-     * @return string[]
-     */
-    public static function format_slide_row(array $row): array {
-        return [
-            'number' => (string) $row['number'],
-            'alttext' => $row['decorative'] ? get_string('report_decorative', 'mod_whakaharatau') : $row['alttext'],
-            'appearances' => (string) $row['appearances'],
-            'firsttry' => (string) $row['firsttry'],
-            'percent' => $row['percent'] === null ? '' : format_float($row['percent'], 1, true, true) . '%',
-            'choices' => (string) $row['choices'],
-        ];
     }
 
     /**

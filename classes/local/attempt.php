@@ -675,7 +675,7 @@ class attempt {
      * slide is finished (or the attempt is finished).
      *
      * @param int $slideid slide id (must belong to this activity)
-     * @return array keys: slideid, imageurl (string|null), alttext (plain text), decorative (bool),
+     * @return array keys: slideid, version (int), imageurl (string|null), alttext (plain text), decorative (bool),
      *      fadeside and fadebottom (int, percent of the picture),
      *      prompthtml (formatted HTML, '' when empty), promptlang (string|null), promptaudiourl (string|null),
      *      options (list of: optionid, number (1-based), audiourl (string|null), transcript (plain text|null))
@@ -704,6 +704,7 @@ class attempt {
         $prompt = trim((string) $slide->prompt);
         return [
             'slideid' => $slideid,
+            'version' => (int) $slide->version,
             'imageurl' => $imageurl ? $imageurl->out(false) : null,
             'alttext' => empty($slide->decorative) ? (string) $slide->alttext : '',
             'decorative' => !empty($slide->decorative),
@@ -772,13 +773,14 @@ class attempt {
      *
      * @param int $slideid slide id
      * @param int $optionid option id
+     * @param int $seenversion version of the slide the learner's page showed, 0 = the current one
      * @return array keys: slideid, optionid, feedback (bool), correct (bool|null: null when feedback is
      *      hidden), slidefinished (bool), triesleft (int|null), correctoptionid (int|null: only when the slide
      *      is finished and feedback is shown), roundfinished (bool), newround (int|null: number of the round
      *      just built), attemptfinished (bool), summary (array|null: get_summary() when the attempt finished)
      * @throws moodle_exception attemptfinished, notcurrentslide, errorwrongslide, optionalreadychosen
      */
-    public function submit_answer(int $slideid, int $optionid): array {
+    public function submit_answer(int $slideid, int $optionid, int $seenversion = 0): array {
         global $DB;
         if ($this->is_finished() || $this->is_finished_in_db()) {
             throw new moodle_exception('attemptfinished', 'mod_whakaharatau');
@@ -797,6 +799,7 @@ class attempt {
             throw new moodle_exception('optionalreadychosen', 'mod_whakaharatau');
         }
 
+        versions::ensure($this->context, $slideid);
         $now = time();
         $iscorrect = !empty($option->iscorrect);
         $response = (object) [
@@ -806,6 +809,7 @@ class attempt {
             'optionid' => $optionid,
             'correct' => $iscorrect ? 1 : 0,
             'tries' => $status['tries'] + 1,
+            'version' => versions::answered_version(slides::get_slide($slideid), $seenversion),
             'timeanswered' => $now,
         ];
         $response->id = $DB->insert_record('whakaharatau_response', $response);
@@ -1286,6 +1290,7 @@ class attempt {
             [$insql, $inparams] = $DB->get_in_or_equal($ids);
             $DB->delete_records_select('whakaharatau_response', "attemptid $insql", $inparams);
             $DB->delete_records_select('whakaharatau_attempt', "id $insql", $inparams);
+            versions::purge_orphans($whakaharatauid);
         }
     }
 

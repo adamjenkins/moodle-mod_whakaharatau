@@ -306,4 +306,46 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame(1, (int) slides::get_option($optionmap[(int) $first->options[2]->id])->iscorrect);
         $this->assertSame(0, (int) $restored->grade);
     }
+
+    /**
+     * Versions, with their files, and answers to a slide that was deleted come back with the user data.
+     *
+     * @return void
+     */
+    public function test_restore_versions(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $this->setup_data();
+        $cm = get_coursemodule_from_instance('whakaharatau', $this->instance->id);
+        $context = \context_module::instance($cm->id);
+        $first = (int) $this->slides[0]->id;
+        $DB->set_field('whakaharatau_slide', 'alttext', 'A new dog', ['id' => $first]);
+        $this->assertSame(2, \mod_whakaharatau\local\versions::sync($context, $first));
+        $deleted = (int) array_pop($this->slides)->id;
+        slides::delete_slide($context, $deleted);
+        $answers = $DB->count_records('whakaharatau_response');
+
+        $restored = $this->backup_and_restore(true);
+        $newcontext = \context_module::instance(get_coursemodule_from_instance('whakaharatau', $restored->id)->id);
+        $newfirst = $this->id_maps($restored)[0][$first];
+        $versions = \mod_whakaharatau\local\versions::get_all((int) $restored->id);
+        $this->assertSame(['A dog', 'A new dog'], array_column($versions[$newfirst], 'alttext'));
+        $this->assertSame(2, (int) slides::get_slide($newfirst)->version);
+        $this->assertNotNull(\mod_whakaharatau\local\versions::get_file_url(
+            $newcontext,
+            (int) $versions[$newfirst][1]->id,
+            'audio-3'
+        ));
+        $this->assertArrayHasKey(-$deleted, $versions);
+        $this->assertSame(2 * $answers, $DB->count_records('whakaharatau_response'));
+        $this->assertTrue($DB->record_exists('whakaharatau_response', ['slideid' => -$deleted]));
+        // The restored content is its current version: saving it unchanged makes no new one.
+        $this->assertSame(2, \mod_whakaharatau\local\versions::sync($newcontext, $newfirst));
+
+        // Without the answers, everything is version 1.
+        $bare = $this->backup_and_restore(false);
+        $this->assertSame([1, 1], array_map('intval', array_column(slides::get_slides((int) $bare->id), 'version')));
+        $this->assertSame([], \mod_whakaharatau\local\versions::get_all((int) $bare->id));
+    }
 }

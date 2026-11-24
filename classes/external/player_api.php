@@ -201,6 +201,7 @@ abstract class player_api extends external_api {
     protected static function slide_structure(): external_single_structure {
         return new external_single_structure([
             'slideid' => new external_value(PARAM_INT, 'Slide id'),
+            'version' => new external_value(PARAM_INT, 'Version of the content, to send back with the answer'),
             'imageurl' => new external_value(PARAM_URL, 'Image URL', VALUE_REQUIRED, null, NULL_ALLOWED),
             'alttext' => new external_value(PARAM_RAW, 'Alternative text (plain text, empty when decorative)'),
             'decorative' => new external_value(PARAM_BOOL, 'Whether the image is decorative'),

@@ -23,8 +23,10 @@
  */
 
 use mod_whakaharatau\local\attempt;
+use mod_whakaharatau\local\cross_report;
 use mod_whakaharatau\local\instance_settings;
 use mod_whakaharatau\local\slides;
+use mod_whakaharatau\local\versions;
 
 /**
  * Which Moodle features the module supports.
@@ -355,7 +357,7 @@ function whakaharatau_pluginfile($course, $cm, $context, $filearea, $args, $forc
     if (
         !in_array(
             $filearea,
-            [slides::AREA_IMAGE, slides::AREA_PROMPT, slides::AREA_AUDIO, slides::AREA_COVER],
+            [slides::AREA_IMAGE, slides::AREA_PROMPT, slides::AREA_AUDIO, slides::AREA_COVER, versions::AREA],
             true
         )
     ) {
@@ -363,6 +365,12 @@ function whakaharatau_pluginfile($course, $cm, $context, $filearea, $args, $forc
     }
     require_course_login($course, true, $cm);
     require_capability('mod/whakaharatau:view', $context);
+    if ($filearea === versions::AREA) {
+        // Old versions are shown in the reports only.
+        if (!has_any_capability(['mod/whakaharatau:viewreports', 'mod/whakaharatau:exportanonymised'], $context)) {
+            return false;
+        }
+    }
 
     if (count($args) < 2) {
         return false;
@@ -375,7 +383,11 @@ function whakaharatau_pluginfile($course, $cm, $context, $filearea, $args, $forc
     }
     // Only media of the accepted types is shown inline; anything else is downloaded.
     $ext = strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION));
-    $types = slides::area_kind($filearea) === 'image' ? slides::IMAGE_TYPES : slides::AUDIO_TYPES;
+    if ($filearea === versions::AREA) {
+        $types = array_merge(slides::IMAGE_TYPES, slides::AUDIO_TYPES);
+    } else {
+        $types = slides::area_kind($filearea) === 'image' ? slides::IMAGE_TYPES : slides::AUDIO_TYPES;
+    }
     if (!in_array($ext, $types, true)) {
         $forcedownload = true;
     }
@@ -396,6 +408,7 @@ function whakaharatau_get_file_areas($course, $cm, $context): array {
         slides::AREA_PROMPT => get_string('area_slideprompt', 'mod_whakaharatau'),
         slides::AREA_AUDIO => get_string('area_optionaudio', 'mod_whakaharatau'),
         slides::AREA_COVER => get_string('area_cover', 'mod_whakaharatau'),
+        versions::AREA => get_string('area_version', 'mod_whakaharatau'),
     ];
 }
 
@@ -582,6 +595,15 @@ function whakaharatau_extend_settings_navigation(settings_navigation $settings, 
             'mod_whakaharatau_export'
         );
     }
+    if (has_capability('mod/whakaharatau:exportanonymised', $context)) {
+        $node->add(
+            get_string('report_anonymised', 'mod_whakaharatau'),
+            new moodle_url('/mod/whakaharatau/anonymised.php', ['id' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_whakaharatau_anonymised'
+        );
+    }
     if (has_capability('mod/whakaharatau:viewreports', $context)) {
         $node->add(
             get_string('report', 'mod_whakaharatau'),
@@ -589,6 +611,47 @@ function whakaharatau_extend_settings_navigation(settings_navigation $settings, 
             navigation_node::TYPE_SETTING,
             null,
             'mod_whakaharatau_report'
+        );
+    }
+}
+
+/**
+ * Add the report across activities to a course that has any.
+ *
+ * @param navigation_node $navigation course navigation
+ * @param stdClass $course course
+ * @param context_course $context course context
+ * @return void
+ */
+function whakaharatau_extend_navigation_course(navigation_node $navigation, stdClass $course, context_course $context): void {
+    if (cross_report::can_view($context) && !empty(get_fast_modinfo($course)->get_instances_of('whakaharatau'))) {
+        $navigation->add(
+            get_string('crossreport', 'mod_whakaharatau'),
+            new moodle_url('/mod/whakaharatau/crossreport.php', ['courseid' => $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_whakaharatau_crossreport',
+            new pix_icon('i/report', '')
+        );
+    }
+}
+
+/**
+ * Add the report across activities to a course category.
+ *
+ * @param navigation_node $navigation category navigation
+ * @param context_coursecat $context category context
+ * @return void
+ */
+function whakaharatau_extend_navigation_category_settings(navigation_node $navigation, context_coursecat $context): void {
+    if (cross_report::can_view($context)) {
+        $navigation->add(
+            get_string('crossreport', 'mod_whakaharatau'),
+            new moodle_url('/mod/whakaharatau/crossreport.php', ['categoryid' => $context->instanceid]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_whakaharatau_crossreport',
+            new pix_icon('i/report', '')
         );
     }
 }

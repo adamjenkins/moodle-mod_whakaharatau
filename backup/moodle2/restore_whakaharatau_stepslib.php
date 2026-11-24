@@ -33,6 +33,12 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class restore_whakaharatau_activity_structure_step extends restore_activity_structure_step {
+    /** @var bool[] old ids of deleted slides whose versions were restored */
+    protected $deletedslides = [];
+
+    /** @var bool[] old ids of options that a restored version knows */
+    protected $versionoptions = [];
+
     /**
      * The paths to process.
      *
@@ -46,6 +52,7 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         $paths[] = new restore_path_element('whakaharatau_slide', '/activity/whakaharatau/slides/slide');
         $paths[] = new restore_path_element('whakaharatau_option', '/activity/whakaharatau/slides/slide/options/option');
         if ($userinfo) {
+            $paths[] = new restore_path_element('whakaharatau_version', '/activity/whakaharatau/versions/version');
             $paths[] = new restore_path_element('whakaharatau_attempt', '/activity/whakaharatau/userattempts/attempt');
             $paths[] = new restore_path_element(
                 'whakaharatau_response',
@@ -93,6 +100,10 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         $oldid = $data->id;
         $data->whakaharatauid = $this->get_new_parentid('whakaharatau');
         \mod_whakaharatau\local\slides::clean_slide_fields($data);
+        if (!$this->get_setting_value('userinfo')) {
+            // Without the answers there is nothing to compare: the content starts again at version 1.
+            $data->version = 1;
+        }
         $newid = $DB->insert_record('whakaharatau_slide', $data);
         $this->set_mapping('whakaharatau_slide', $oldid, $newid, true);
     }
@@ -111,6 +122,57 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         \mod_whakaharatau\local\slides::clean_option_fields($data);
         $newid = $DB->insert_record('whakaharatau_option', $data);
         $this->set_mapping('whakaharatau_option', $oldid, $newid, true);
+    }
+
+    /**
+     * Restore one version of a slide. A slide that was deleted before the backup gets the negative of its old id,
+     * which no live slide can have; so does a clip that was removed.
+     *
+     * @param array $data element data
+     * @return void
+     */
+    protected function process_whakaharatau_version($data) {
+        global $DB;
+        $data = (object) $data;
+        $oldid = $data->id;
+        $oldslideid = (int) $data->slideid;
+        $data->whakaharatauid = $this->get_new_parentid('whakaharatau');
+        $data->slideid = (int) $this->get_mappingid('whakaharatau_slide', $oldslideid);
+        if (!$data->slideid) {
+            $data->slideid = -abs($oldslideid);
+            $this->deletedslides[$oldslideid] = true;
+        }
+        $data->version = max(1, (int) $data->version);
+        $key = ['whakaharatauid' => $data->whakaharatauid, 'slideid' => $data->slideid, 'version' => $data->version];
+        if ($DB->record_exists('whakaharatau_version', $key)) {
+            return;
+        }
+        $clean = (object) ['alttext' => $data->alttext, 'prompt' => $data->prompt, 'promptlang' => $data->promptlang,
+            'decorative' => $data->decorative];
+        \mod_whakaharatau\local\slides::clean_slide_fields($clean);
+        foreach (['alttext', 'prompt', 'promptlang', 'decorative'] as $field) {
+            $data->$field = $clean->$field;
+        }
+        $options = \mod_whakaharatau\local\versions::decode_options((string) ($data->options ?? ''));
+        foreach ($options as $option) {
+            $this->versionoptions[$option->id] = true;
+            $option->id = $this->map_version_option($option->id);
+        }
+        $data->options = json_encode($options);
+        // Computed from ids that have changed: after_execute() sets it for the current versions.
+        $data->fingerprint = '';
+        $newid = $DB->insert_record('whakaharatau_version', $data);
+        $this->set_mapping('whakaharatau_version', $oldid, $newid, true);
+    }
+
+    /**
+     * New id of a clip, or the negative of its old id when it was not restored.
+     *
+     * @param int $oldid old option id
+     * @return int
+     */
+    protected function map_version_option(int $oldid): int {
+        return (int) $this->get_mappingid('whakaharatau_option', $oldid) ?: -abs($oldid);
     }
 
     /**
@@ -137,8 +199,8 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
     }
 
     /**
-     * Restore one response. Responses to slides or options that were not in the backup (deleted before it was
-     * made) are dropped: every reader skips them anyway.
+     * Restore one response. Responses to slides or options that were deleted before the backup was made are kept
+     * when a restored version tells what they were, else dropped.
      *
      * @param array $data element data
      * @return void
@@ -150,8 +212,17 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         if (!$data->attemptid) {
             return;
         }
-        $data->slideid = $this->get_mappingid('whakaharatau_slide', $data->slideid);
-        $data->optionid = $this->get_mappingid('whakaharatau_option', $data->optionid);
+        $oldslideid = (int) $data->slideid;
+        $oldoptionid = (int) $data->optionid;
+        $data->slideid = (int) $this->get_mappingid('whakaharatau_slide', $oldslideid);
+        if (!$data->slideid && isset($this->deletedslides[$oldslideid])) {
+            $data->slideid = -abs($oldslideid);
+        }
+        $data->optionid = (int) $this->get_mappingid('whakaharatau_option', $oldoptionid);
+        if (!$data->optionid && isset($this->versionoptions[$oldoptionid])) {
+            $data->optionid = -abs($oldoptionid);
+        }
+        $data->version = max(1, (int) ($data->version ?? 1));
         if (!$data->slideid || !$data->optionid) {
             return;
         }
@@ -219,5 +290,8 @@ class restore_whakaharatau_activity_structure_step extends restore_activity_stru
         $this->add_related_files('mod_whakaharatau', 'slideimage', 'whakaharatau_slide');
         $this->add_related_files('mod_whakaharatau', 'slideprompt', 'whakaharatau_slide');
         $this->add_related_files('mod_whakaharatau', 'optionaudio', 'whakaharatau_option');
+        $this->add_related_files('mod_whakaharatau', 'version', 'whakaharatau_version');
+        $context = context_module::instance($this->task->get_moduleid());
+        \mod_whakaharatau\local\versions::refresh_fingerprints($context, (int) $this->task->get_activityid());
     }
 }

@@ -40,6 +40,12 @@ class submit_answer extends player_api {
             'attemptid' => new external_value(PARAM_INT, 'Attempt id'),
             'slideid' => new external_value(PARAM_INT, 'Slide id'),
             'optionid' => new external_value(PARAM_INT, 'Option id'),
+            'version' => new external_value(
+                PARAM_INT,
+                'Version of the slide that was shown, 0 = the current one',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -49,13 +55,14 @@ class submit_answer extends player_api {
      * @param int $attemptid attempt id
      * @param int $slideid slide id (must be the current slide)
      * @param int $optionid option id
+     * @param int $version version of the slide that was shown, 0 = the current one
      * @return array the result of attempt::submit_answer() plus the new state and slides: the answered slide
      *      (refreshed, e.g. with transcripts once finished), the slide now current and the one after it
      */
-    public static function execute(int $attemptid, int $slideid, int $optionid): array {
+    public static function execute(int $attemptid, int $slideid, int $optionid, int $version = 0): array {
         $params = self::validate_parameters(
             self::execute_parameters(),
-            ['attemptid' => $attemptid, 'slideid' => $slideid, 'optionid' => $optionid]
+            ['attemptid' => $attemptid, 'slideid' => $slideid, 'optionid' => $optionid, 'version' => $version]
         );
         $attempt = self::load_own_attempt($params['attemptid'], true);
 
@@ -64,7 +71,11 @@ class submit_answer extends player_api {
         $lock = attempt::lock($attempt->get_id());
         try {
             $attempt = self::load_own_attempt($params['attemptid'], true);
-            $result = $attempt->submit_answer((int) $params['slideid'], (int) $params['optionid']);
+            $result = $attempt->submit_answer(
+                (int) $params['slideid'],
+                (int) $params['optionid'],
+                (int) $params['version']
+            );
         } finally {
             $lock->release();
         }

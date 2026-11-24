@@ -192,6 +192,7 @@ final class slides {
             'decorative' => empty($data->decorative) ? 0 : 1,
             'fade' => empty($fade) ? 0 : 1,
             'fadewidth' => instance_settings::clamp_fade($fadewidth),
+            'version' => 1,
             'timecreated' => $now,
             'timemodified' => $now,
         ];
@@ -247,6 +248,8 @@ final class slides {
         if (!$slide) {
             return;
         }
+        // Answers stay in the reports, so what they were answers to is kept.
+        versions::ensure($context, $slideid);
         $fs = get_file_storage();
         foreach (self::get_options($slideid) as $option) {
             $fs->delete_area_files($context->id, self::COMPONENT, self::AREA_AUDIO, $option->id);
@@ -255,6 +258,7 @@ final class slides {
         $fs->delete_area_files($context->id, self::COMPONENT, self::AREA_IMAGE, $slideid);
         $fs->delete_area_files($context->id, self::COMPONENT, self::AREA_PROMPT, $slideid);
         $DB->delete_records('whakaharatau_slide', ['id' => $slideid]);
+        versions::purge_orphans((int) $slide->whakaharatauid);
         self::resequence_slides((int) $slide->whakaharatauid);
     }
 
@@ -274,6 +278,7 @@ final class slides {
             $DB->delete_records_select('whakaharatau_option', "slideid $insql", $params);
         }
         $DB->delete_records('whakaharatau_slide', ['whakaharatauid' => $whakaharatauid]);
+        versions::delete_all($context, $whakaharatauid);
         if ($context) {
             $fs = get_file_storage();
             foreach ([self::AREA_IMAGE, self::AREA_PROMPT, self::AREA_AUDIO] as $area) {
@@ -299,6 +304,9 @@ final class slides {
         if (!$slideids) {
             return;
         }
+        foreach ($slideids as $slideid) {
+            versions::ensure($context, $slideid);
+        }
         $fs = get_file_storage();
         [$insql, $params] = $DB->get_in_or_equal($slideids);
         $optionids = $DB->get_fieldset_select('whakaharatau_option', 'id', "slideid $insql", $params);
@@ -311,6 +319,7 @@ final class slides {
         }
         $DB->delete_records_select('whakaharatau_option', "slideid $insql", $params);
         $DB->delete_records_select('whakaharatau_slide', "id $insql", $params);
+        versions::purge_orphans($whakaharatauid);
         self::resequence_slides($whakaharatauid);
     }
 
@@ -882,6 +891,7 @@ final class slides {
         // A backup from before the fade settings: the fade every picture had then.
         $data->fade = empty($data->fade ?? 1) ? 0 : 1;
         $data->fadewidth = instance_settings::clamp_fade($data->fadewidth ?? instance_settings::FADE_WIDTH);
+        $data->version = max(1, (int) ($data->version ?? 1));
         $data->sortorder = (int) ($data->sortorder ?? 0);
     }
 

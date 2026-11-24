@@ -52,6 +52,7 @@
         <FIELD NAME="decorative" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = the image is decorative and needs no alt text"/>
         <FIELD NAME="fade" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = the picture fades into the panel"/>
         <FIELD NAME="fadewidth" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="Side fade, percent of the picture (0-50)"/>
+        <FIELD NAME="version" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Current version of the content"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -118,6 +119,7 @@
         <FIELD NAME="optionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="correct" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="tries" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Try number of this choice on this slide in this round, from 1"/>
+        <FIELD NAME="version" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Version of the slide the learner saw"/>
         <FIELD NAME="timeanswered" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -127,6 +129,28 @@
       <INDEXES>
         <INDEX NAME="attemptid-round-slideid" UNIQUE="false" FIELDS="attemptid, round, slideid"/>
         <INDEX NAME="slideid" UNIQUE="false" FIELDS="slideid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="whakaharatau_version" COMMENT="Content of a slide at one time, so answers before and after a change can be compared">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="whakaharatauid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="slideid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Slide id; kept after the slide is deleted, negative for a deleted slide restored from a backup"/>
+        <FIELD NAME="version" TYPE="int" LENGTH="6" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="prompt" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="promptlang" TYPE="char" LENGTH="30" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="alttext" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="decorative" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="options" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON list of id, transcript and correct, in the teacher order"/>
+        <FIELD NAME="fingerprint" TYPE="char" LENGTH="40" NOTNULL="false" SEQUENCE="false" COMMENT="sha1 of the content"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When this version began"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="whakaharatauid" TYPE="foreign" FIELDS="whakaharatauid" REFTABLE="whakaharatau" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="whakaharatauid-slideid-version" UNIQUE="true" FIELDS="whakaharatauid, slideid, version"/>
       </INDEXES>
     </TABLE>
   </TABLES>

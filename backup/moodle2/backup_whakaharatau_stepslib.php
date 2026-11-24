@@ -49,12 +49,18 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
         $slides = new backup_nested_element('slides');
         $slide = new backup_nested_element('slide', ['id'], [
             'sortorder', 'prompt', 'promptformat', 'promptlang', 'alttext', 'decorative', 'fade', 'fadewidth',
-            'timecreated', 'timemodified',
+            'version', 'timecreated', 'timemodified',
         ]);
 
         $options = new backup_nested_element('options');
         $option = new backup_nested_element('option', ['id'], [
             'sortorder', 'transcript', 'iscorrect', 'timecreated', 'timemodified',
+        ]);
+
+        $versions = new backup_nested_element('versions');
+        $version = new backup_nested_element('version', ['id'], [
+            'slideid', 'version', 'prompt', 'promptlang', 'alttext', 'decorative', 'options', 'fingerprint',
+            'timecreated',
         ]);
 
         $attempts = new backup_nested_element('userattempts');
@@ -66,7 +72,7 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
 
         $responses = new backup_nested_element('responses');
         $response = new backup_nested_element('response', ['id'], [
-            'round', 'slideid', 'optionid', 'correct', 'tries', 'timeanswered',
+            'round', 'slideid', 'optionid', 'correct', 'tries', 'version', 'timeanswered',
         ]);
 
         // Build the tree. Slides come before attempts, so restore maps every slide and option before it
@@ -75,6 +81,8 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
         $slides->add_child($slide);
         $slide->add_child($options);
         $options->add_child($option);
+        $whakaharatau->add_child($versions);
+        $versions->add_child($version);
         $whakaharatau->add_child($attempts);
         $attempts->add_child($attempt);
         $attempt->add_child($responses);
@@ -85,6 +93,8 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
         $slide->set_source_table('whakaharatau_slide', ['whakaharatauid' => backup::VAR_PARENTID], 'sortorder ASC, id ASC');
         $option->set_source_table('whakaharatau_option', ['slideid' => backup::VAR_PARENTID], 'sortorder ASC, id ASC');
         if ($userinfo) {
+            // Versions only mean something with the answers that were given to them.
+            $version->set_source_table('whakaharatau_version', ['whakaharatauid' => backup::VAR_PARENTID], 'id ASC');
             $attempt->set_source_table('whakaharatau_attempt', ['whakaharatauid' => backup::VAR_PARENTID], 'id ASC');
             $response->set_source_table('whakaharatau_response', ['attemptid' => backup::VAR_PARENTID], 'id ASC');
         }
@@ -98,6 +108,8 @@ class backup_whakaharatau_activity_structure_step extends backup_activity_struct
         $slide->annotate_files('mod_whakaharatau', 'slideimage', 'id');
         $slide->annotate_files('mod_whakaharatau', 'slideprompt', 'id');
         $option->annotate_files('mod_whakaharatau', 'optionaudio', 'id');
+
+        $version->annotate_files('mod_whakaharatau', 'version', 'id');
 
         return $this->prepare_activity_structure($whakaharatau);
     }

@@ -681,6 +681,25 @@
     height: 0.5rem;
 }
 
+.mod-whakaharatau-report thead th {
+    vertical-align: bottom;
+}
+
+.mod-whakaharatau-report td.mod-whakaharatau-report-text {
+    min-width: 9rem;
+}
+
+.mod-whakaharatau-report .mod-whakaharatau-report-thumb {
+    display: block;
+}
+
+.mod-whakaharatau-report-audio audio {
+    display: block;
+    width: 13rem;
+    max-width: none;
+    height: 2.5rem;
+}
+
 /* The hidden attribute wins over the display rules above (kept last, two classes). */
 .mod-whakaharatau-player [hidden] {
     display: none;
