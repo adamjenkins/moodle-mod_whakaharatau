@@ -70,21 +70,28 @@
 
 .mod-whakaharatau-screen {
     display: grid;
-    grid-template-columns: 3fr 2fr;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     min-height: 26rem;
+    border-radius: inherit;
 }
 
 /* The image takes the left side and fades into the grey panel at its right edge. It is never cropped: it keeps
-   its own proportions, and a picture too tall for the screen is scaled down whole (contain), not cut. */
+   its own proportions, and a picture too tall for the screen is scaled down whole (contain), not cut.
+   The figure fills its side of the card and takes the card's own corners (inherit), so the picture follows the
+   card's edge where it reaches a corner, whatever radius the card has, and is square where it does not. It ends
+   where the panel starts, so no text lies over the picture. */
 .mod-whakaharatau-figure {
     grid-row: 1;
     grid-column: 1;
-    align-self: center;
+    display: flex;
+    align-items: center;
     position: relative;
     z-index: 0;
-    width: calc(100% + 4rem);
+    min-width: 0;
     overflow: hidden;
-    border-radius: var(--mwh-radius) 0 0 var(--mwh-radius);
+    border-radius: inherit;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .mod-whakaharatau-image {
@@ -566,18 +573,19 @@
 /* Narrow players (phones, narrow course columns): the image stacks above the option rows. */
 @container (max-width: 700px) { /* stylelint-disable-line csstree/validator */
     .mod-whakaharatau-screen {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
     }
 
     .mod-whakaharatau-figure {
-        align-self: stretch;
-        width: 100%;
-        border-radius: var(--mwh-radius) var(--mwh-radius) 0 0;
+        justify-content: center;
+        border-radius: inherit;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
     }
 
     /* The whole picture above the option rows, never a cropped band; at most 60% of the screen height. */
     .mod-whakaharatau-image {
-        margin: 0 auto;
         max-height: 60vh;
         mask-image: linear-gradient(to bottom, #000 90%, transparent 100%);
     }
